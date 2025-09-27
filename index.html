@@ -7,27 +7,50 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <meta name="color-scheme" content="light dark" />
   <style>
-    .container {max-width: 1100px}
-    .tab-active{background:#000;color:#fff}
-    /* simple utility */
-    .card{background:#fff;border-radius:1rem;box-shadow:0 8px 20px rgba(0,0,0,.06)}
-    @media (prefers-color-scheme: dark){
-      body{background:#0b1220;color:#e6ebf5}
-      .card{background:#0f172a;border:1px solid #1e293b}
-      input,textarea,select{background:#0b1220;color:#e6ebf5;border-color:#334155}
-      .border{border-color:#334155}
+    /* THEME: Light (default) */
+    :root {
+      --bg:#F5F7FA;
+      --surface:#FFFFFF;
+      --primary:#00ADB5;
+      --primary-dark:#008a91;
+      --text:#1E293B;
+      --text-light:#64748B;
+      --border:#E2E8F0;
+      --chip:#F0FDFF;
     }
+    /* THEME: Dark (ColorHunt 222831/393E46/00ADB5/EEEEEE) */
+    [data-theme="dark"]{
+      --bg:#222831;
+      --surface:#393E46;
+      --primary:#00ADB5;
+      --primary-dark:#0199a0;
+      --text:#EEEEEE;
+      --text-light:#C7D2FE;
+      --border:#2F3742;
+      --chip:#2b3a3f;
+    }
+
+    body { background:var(--bg); color:var(--text); }
+    .card { background:var(--surface); border-radius:1rem; border:1px solid var(--border); box-shadow:0 6px 18px rgba(0,0,0,0.05); }
+    .tab-active { background:var(--primary)!important; color:#fff!important; border-color:var(--primary)!important; }
+    .btn { background:var(--primary); color:#fff; border-radius:0.75rem; padding:0.5rem 1rem; font-size:0.875rem; font-weight:600; transition:transform .06s ease, background .2s; }
+    .btn:active{ transform:translateY(1px); }
+    .btn:hover { background:var(--primary-dark); }
+    input,textarea,select { border:1px solid var(--border); border-radius:0.75rem; padding:0.6rem 0.8rem; background:var(--surface); color:var(--text); }
+    label { color:var(--text-light); font-size:0.875rem; }
+    .chip{ background:var(--chip); border:1px solid var(--border); padding:.25rem .6rem; border-radius:999px; font-weight:600; color:var(--primary); display:inline-block }
   </style>
 </head>
-<body class="bg-slate-100 min-h-screen">
+<body class="min-h-screen">
   <!-- Top Bar -->
   <div class="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
     <div class="container mx-auto px-4 py-3 flex items-center gap-2">
-      <div class="font-semibold">Personal Hub</div>
+      <div class="font-semibold text-lg text-[var(--primary)]">Personal Hub</div>
       <div class="ml-auto flex gap-2">
-        <button id="buildTomorrowBtn" class="px-3 py-1.5 rounded-xl border">Build Tomorrow</button>
-        <button id="exportBtn" class="px-3 py-1.5 rounded-xl border">Export</button>
-        <label class="px-3 py-1.5 rounded-xl border cursor-pointer">
+        <button id="themeToggle" class="btn" title="Chuyển theme">🌙 Dark</button>
+        <button id="buildTomorrowBtn" class="btn">Build Tomorrow</button>
+        <button id="exportBtn" class="btn">Export</button>
+        <label class="btn cursor-pointer">
           Import
           <input id="importInput" type="file" accept="application/json" class="hidden" />
         </label>
@@ -36,40 +59,50 @@
   </div>
 
   <div class="container mx-auto px-4">
-    <div id="notice" class="hidden mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm"></div>
+    <div id="notice" class="hidden mt-3 rounded-xl bg-[var(--primary)]/10 border border-[var(--primary)] p-3 text-sm text-[var(--text)]"></div>
 
     <!-- Tabs -->
-    <div class="flex gap-2 mt-4 mb-4">
-      <button data-tab="profile" class="tab px-4 py-2 rounded-xl border bg-white">Profile</button>
-      <button data-tab="timetable" class="tab px-4 py-2 rounded-xl border bg-white">Thời khoá biểu</button>
-      <button data-tab="routine" class="tab px-4 py-2 rounded-xl border bg-white">Lịch sinh hoạt</button>
-      <button data-tab="todos" class="tab px-4 py-2 rounded-xl border bg-white">To‑Do</button>
+    <div class="flex gap-2 mt-4 mb-6">
+      <button data-tab="profile" class="tab px-4 py-2 rounded-xl border">Profile</button>
+      <button data-tab="timetable" class="tab px-4 py-2 rounded-xl border">Thời khoá biểu</button>
+      <button data-tab="routine" class="tab px-4 py-2 rounded-xl border">Lịch sinh hoạt</button>
+      <button data-tab="todos" class="tab px-4 py-2 rounded-xl border">To‑Do</button>
     </div>
 
     <!-- Profile -->
-    <section id="tab-profile" class="card p-5 mb-6">
+    <section id="tab-profile" class="card p-6 mb-6">
       <div class="flex items-center justify-between mb-4">
-        <h2 class="text-xl font-semibold">Thông tin cá nhân</h2>
-        <button id="saveProfile" class="px-3 py-1.5 rounded-xl bg-black text-white text-sm">Save</button>
-      </div>
-      <div class="grid md:grid-cols-3 gap-6">
-        <div>
-          <img id="avatarPreview" src="" alt="avatar" class="w-full aspect-square object-cover rounded-2xl"/>
-          <input id="avatarUrl" class="mt-3 w-full border rounded-xl p-2" placeholder="Avatar URL" />
+        <h2 class="text-xl font-semibold text-[var(--primary)]">Thông tin cá nhân</h2>
+        <div class="text-sm text-[var(--text-light)] space-x-4">
+          <span id="dobDisplay"></span>
+          <span id="relationshipDisplay"></span>
         </div>
-        <div class="md:col-span-2">
+        <button id="saveProfile" class="btn text-sm">Save</button>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <img id="avatarPreview" src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=500&auto=format&fit=crop" alt="avatar" class="w-full aspect-square object-cover rounded-2xl border"/>
+        </div>
+        <div>
           <div class="grid grid-cols-2 gap-3">
-            <input id="name" class="border rounded-xl p-2" placeholder="Họ tên" />
-            <input id="email" class="border rounded-xl p-2" placeholder="Email" />
-            <input id="phone" class="border rounded-xl p-2" placeholder="SĐT" />
-            <input id="location" class="border rounded-xl p-2" placeholder="Địa điểm" />
+            <input id="name" placeholder="Họ tên" />
+            <input id="email" placeholder="Email" />
+            <input id="phone" placeholder="SĐT" />
+            <input id="location" placeholder="Địa điểm" />
+            <input id="dob" type="date" class="col-span-2" placeholder="Ngày sinh" />
           </div>
-          <textarea id="description" class="mt-3 w-full border rounded-xl p-2" rows="3" placeholder="Mô tả / mục tiêu"></textarea>
+          <textarea id="description" class="mt-3 w-full" rows="3" placeholder="Mô tả / mục tiêu"></textarea>
+
+          <div class="mt-4">
+            <h3 class="font-medium mb-1">Tình trạng</h3>
+            <textarea id="relationship" class="w-full" rows="2" placeholder='VD: Hẹn hò với <a href="https://bunguwu.github.io/thaonguyencute" target="_blank">Thảo Nguyễn</a>'></textarea>
+      
+          </div>
 
           <div class="mt-4">
             <div class="flex items-center justify-between">
               <h3 class="font-medium">Liên kết MXH</h3>
-              <button id="addSocial" class="text-sm underline">+ Thêm</button>
+              <button id="addSocial" class="text-sm text-[var(--primary)]">+ Thêm</button>
             </div>
             <div id="socials" class="mt-2 space-y-2"></div>
           </div>
@@ -77,7 +110,7 @@
           <div class="mt-4">
             <div class="flex items-center justify-between">
               <h3 class="font-medium">Danh hiệu theo năm</h3>
-              <button id="addAchievement" class="text-sm underline">+ Thêm</button>
+              <button id="addAchievement" class="text-sm text-[var(--primary)]">+ Thêm</button>
             </div>
             <div id="achievements" class="mt-2 space-y-2"></div>
           </div>
@@ -86,37 +119,52 @@
     </section>
 
     <!-- Timetable -->
-    <section id="tab-timetable" class="hidden card p-5 mb-6">
-      <h2 class="text-xl font-semibold mb-4">Thời khoá biểu (mỗi môn có Note + BTVN)</h2>
+    <section id="tab-timetable" class="hidden card p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-[var(--primary)]">Thông tin cá nhân</h2>
+        <div class="text-sm text-[var(--text-light)] space-x-4">
+          <span id="dobDisplay"></span>
+          <span id="relationshipDisplay"></span>
+        </div>
+        <button id="saveProfile" class="btn text-sm">Save</button>
+      </div>
       <div id="timetableWrap" class="grid md:grid-cols-2 gap-4"></div>
     </section>
 
     <!-- Routine -->
-    <section id="tab-routine" class="hidden card p-5 mb-6">
-      <h2 class="text-xl font-semibold mb-4">Lịch sinh hoạt (lặp tuần + sự kiện)</h2>
+    <section id="tab-routine" class="hidden card p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-[var(--primary)]">Thông tin cá nhân</h2>
+        <div class="text-sm text-[var(--text-light)] space-x-4">
+          <span id="dobDisplay"></span>
+          <span id="relationshipDisplay"></span>
+        </div>
+        <button id="saveProfile" class="btn text-sm">Save</button>
+      </div>
       <div id="routineWrap" class="space-y-4"></div>
     </section>
 
     <!-- Todos -->
-    <section id="tab-todos" class="hidden card p-5 mb-6">
+    <section id="tab-todos" class="hidden card p-6 mb-6">
       <div class="flex items-center justify-between mb-2">
-        <h2 class="text-xl font-semibold">To‑Do & Kết chuyển sang ngày mai</h2>
-        <div class="text-sm text-slate-500">Hôm nay: <span id="todayBadge"></span></div>
+        <h2 class="text-xl font-semibold text-[var(--primary)]">To‑Do & Kết chuyển</h2>
+        <div class="text-sm text-[var(--text-light)]">Hôm nay: <span id="todayBadge"></span></div>
       </div>
       <div class="flex flex-col md:flex-row gap-2 mb-3">
-        <input id="todoText" class="border rounded-xl p-2 flex-1" placeholder="Nhiệm vụ"/>
-        <input id="todoDue" type="date" class="border rounded-xl p-2"/>
-        <button id="todoAdd" class="px-4 py-2 rounded-xl bg-black text-white">Thêm</button>
+        <input id="todoText" placeholder="Nhiệm vụ" class="flex-1" />
+        <input id="todoDue" type="date" />
+        <button id="todoAdd" class="btn">Thêm</button>
       </div>
       <div id="todoGroups" class="space-y-4"></div>
     </section>
 
-    <footer class="text-center text-xs text-slate-500 pb-8">Local-first • Auto-save • No backend required • HTML + Tailwind</footer>
+    <footer class="text-center text-xs text-[var(--text-light)] pb-8">Local-first • Auto-save • No backend • HTML + Tailwind</footer>
   </div>
 
 <script>
 (function(){
-  const STORAGE_KEY = 'personal_hub_html_v1';
+  const STORAGE_KEY = 'personal_hub_html_v2';
+  const THEME_KEY = 'personal_hub_theme';
   const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const timeBlocks = [
     {id:'morning', label:'Sáng'},
@@ -132,14 +180,15 @@
     meta:{lastOpened: todayISO()},
     profile:{
       name:'Your Name',
-      avatarUrl:'https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=500&auto=format&fit=crop',
       description:'Mục tiêu: AI-driven entrepreneur. Học TSA, build sản phẩm AI.',
       basics:{email:'you@example.com', phone:'+84 xxx', location:'VN'},
       socials:[{id:uid(),label:'Facebook',url:'https://facebook.com/'}],
-      achievements:[{id:uid(),year:new Date().getFullYear(), title:'Top 1 lớp Toán'}]
+      achievements:[{id:uid(),year:new Date().getFullYear(), title:'Top 1 lớp Toán'}],
+      dob:'',
+      relationshipHTML:'Hẹn hò với <a href="https://bunguwu.github.io/thaonguyencute" target="_blank">Thảo Nguyễn</a>'
     },
     timetable:Object.fromEntries(weekdays.map(d=>[d,[
-      {id:uid(),subject:'Toán',note:'Chương đạo hàm',homework:true},
+      {id:uid(),subject:'Toán',note:'Chương đạo hàm',homework:true, hwNote:'BTVN 1-20, hạn thứ 6'},
       {id:uid(),subject:'Vật lý',note:'Điện xoay chiều',homework:false}
     ]])),
     routine:Object.fromEntries(weekdays.map(d=>[d,{
@@ -159,6 +208,7 @@
   let db = load();
 
   // Boot
+  initTheme();
   initTabs();
   hydrateProfile();
   renderTimetable();
@@ -166,6 +216,30 @@
   renderTodos();
   attachTopbar();
   autoCarryOverIfNewDay();
+
+  // THEME
+  function initTheme(){
+    const saved = localStorage.getItem(THEME_KEY) || 'light';
+    applyTheme(saved);
+    const btn = document.getElementById('themeToggle');
+    if(btn){
+      btn.onclick = ()=>{
+        const next = (document.documentElement.getAttribute('data-theme')==='dark') ? 'light' : 'dark';
+        applyTheme(next);
+      };
+    }
+  }
+  function applyTheme(mode){
+    if(mode==='dark'){
+      document.documentElement.setAttribute('data-theme','dark');
+      localStorage.setItem(THEME_KEY,'dark');
+      const btn = document.getElementById('themeToggle'); if(btn) btn.textContent='☀️ Light';
+    }else{
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem(THEME_KEY,'light');
+      const btn = document.getElementById('themeToggle'); if(btn) btn.textContent='🌙 Dark';
+    }
+  }
 
   // Utils
   function load(){
@@ -175,7 +249,7 @@
   function notify(msg){
     const el=document.getElementById('notice');
     el.textContent=msg; el.classList.remove('hidden');
-    setTimeout(()=>el.classList.add('hidden'), 3200);
+    setTimeout(()=>el.classList.add('hidden'), 3000);
   }
 
   // Tabs
@@ -198,19 +272,19 @@
   // Profile
   function hydrateProfile(){
     const p = db.profile;
-    // inputs
-    const avatarUrl = byId('avatarUrl');
-    const avatarPreview = byId('avatarPreview');
     const name = byId('name');
     const email = byId('email');
     const phone = byId('phone');
     const location = byId('location');
     const description = byId('description');
+    const dob = byId('dob');
+    const relationship = byId('relationship');
+    const relPrev = byId('relationshipPreview');
 
-    avatarUrl.value = p.avatarUrl; avatarPreview.src=p.avatarUrl;
     name.value=p.name; email.value=p.basics.email; phone.value=p.basics.phone; location.value=p.basics.location; description.value=p.description;
-
-    avatarUrl.addEventListener('input', ()=>{ avatarPreview.src = avatarUrl.value; });
+    dob.value = p.dob || '';
+    relationship.value = p.relationshipHTML || '';
+    if(relPrev) relPrev.innerHTML = relationship.value || '';
 
     // socials
     const socialsWrap = byId('socials');
@@ -220,10 +294,14 @@
         const row = el('div', 'flex gap-2');
         const label = input('border rounded-xl p-2 flex-1', s.label, 'Nhãn (Facebook, GitHub...)');
         const url = input('border rounded-xl p-2 flex-[2]', s.url, 'URL');
-        const del = button('text-xs underline', 'Xoá');
+        const del = button('text-xs text-red-500', 'Xoá');
         label.addEventListener('input', ()=> s.label=label.value);
         url.addEventListener('input', ()=> s.url=url.value);
-        del.addEventListener('click', ()=>{ p.socials.splice(idx,1); renderSocials(); save(); });
+        del.addEventListener('click', ()=>{ p.socials.splice(idx,1); renderSocials();
+    // live preview for relationship
+    if(relationship){
+      relationship.addEventListener('input', ()=>{ if(relPrev){ relPrev.innerHTML = relationship.value; } p.relationshipHTML = relationship.value; save(); });
+    } save(); });
         row.append(label,url,del); socialsWrap.append(row);
       })
       save();
@@ -239,7 +317,6 @@
         const row = el('div','grid grid-cols-6 gap-2 items-center');
         const year = input('border rounded-xl p-2 col-span-2', a.year, 'Năm', 'number');
         const title = input('border rounded-xl p-2 col-span-4', a.title, 'Danh hiệu');
-        const del = button('text-xs underline col-span-1 hidden','X');
         year.addEventListener('input', ()=> a.year = Number(year.value||new Date().getFullYear()));
         title.addEventListener('input', ()=> a.title = title.value);
         row.append(year,title); achWrap.append(row);
@@ -253,8 +330,9 @@
       db.profile = {
         ...p,
         name: name.value,
-        avatarUrl: avatarUrl.value,
         description: description.value,
+        dob: dob.value || '',
+        relationshipHTML: relationship.value || '',
         basics:{ email: email.value, phone: phone.value, location: location.value },
       };
       save();
@@ -262,15 +340,18 @@
     }
   }
 
-  // Timetable
+  // Timetable with homework note
   function renderTimetable(){
     const wrap = byId('timetableWrap');
     wrap.innerHTML='';
     weekdays.forEach((d)=>{
       const card = el('div','border rounded-2xl p-4');
-      const header = el('div','flex items-center justify-between mb-2');
-      header.append(el('h3','font-semibold',d));
-      const addBtn = button('text-sm underline','+ Môn');
+      const header = el('div','flex items-center justify-between mb-3');
+      const titleWrap = el('div','flex items-center gap-2');
+      const chip = el('span','chip', d);
+      titleWrap.append(chip);
+      header.append(titleWrap);
+      const addBtn = button('text-sm text-[var(--primary)]','+ Môn');
       header.append(addBtn);
       card.append(header);
       const list = el('div','space-y-2');
@@ -286,14 +367,13 @@
           const label = el('label','col-span-1 flex items-center gap-1 text-sm');
           const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=!!r.homework; cb.addEventListener('change',()=>{ r.homework = cb.checked; if(!cb.checked){ delete r.hwNote; } save(); draw(); });
           label.append(cb, el('span','', 'HW'));
-          const del = button('text-xs underline col-span-2','Xoá');
+          const del = button('text-xs text-red-500 col-span-2','Xoá');
           del.onclick=()=>{ db.timetable[d].splice(idx,1); save(); draw(); };
           subj.oninput=()=>{ r.subject=subj.value; save(); };
           note.oninput=()=>{ r.note=note.value; save(); };
           row.append(subj,note,label,del);
           list.append(row);
 
-          // Conditional homework note
           if (r.homework){
             const hwRow = el('div','grid grid-cols-12 gap-2');
             const hw = input('border rounded-xl p-2 col-span-12', r.hwNote || '', 'Ghi chú BTVN (yêu cầu, deadline, tài liệu...)');
@@ -316,7 +396,7 @@
       const dayCard = el('div','border rounded-2xl p-4');
       const header = el('div','flex items-center justify-between');
       header.append(el('h3','font-semibold', d));
-      const addEventBtn = button('text-sm underline','+ Sự kiện');
+      const addEventBtn = button('text-sm text-[var(--primary)]','+ Sự kiện');
       addEventBtn.onclick = ()=>{ db.routine[d].events.push({id:uid(),title:'Sự kiện',time:'',notes:'',recurring:false}); save(); draw(); };
       header.append(addEventBtn);
       dayCard.append(header);
@@ -328,7 +408,7 @@
         const box = el('div','bg-slate-50 rounded-xl p-3');
         const top = el('div','flex items-center justify-between mb-2');
         top.append(el('div','font-medium',label));
-        const add = button('text-xs underline','+ Hoạt động');
+        const add = button('text-xs text-[var(--primary)]','+ Hoạt động');
         add.onclick = ()=>{ db.routine[d][blockId].push({id:uid(),title:'',notes:'',recurring:true}); save(); draw(); };
         top.append(add); box.append(top);
         const list = el('div','space-y-2');
@@ -339,7 +419,7 @@
           const loop = el('label','col-span-1 text-xs flex items-center gap-1');
           const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=!!it.recurring; cb.onchange=()=>{ it.recurring=cb.checked; save(); };
           loop.append(cb, el('span','', 'Loop'));
-          const del = button('text-xs underline col-span-1','Xoá'); del.onclick=()=>{ db.routine[d][blockId].splice(idx,1); save(); draw(); };
+          const del = button('text-xs text-red-500 col-span-1','Xoá'); del.onclick=()=>{ db.routine[d][blockId].splice(idx,1); save(); draw(); };
           title.oninput=()=>{ it.title=title.value; save(); };
           notes.oninput=()=>{ it.notes=notes.value; save(); };
           row.append(title,notes,loop,del);
@@ -351,7 +431,6 @@
 
       timeBlocks.forEach(b=> grid.append(blockUI(b.id,b.label)));
 
-      // events
       const evs = db.routine[d].events;
       if(evs.length){
         const evWrap = el('div','mt-3');
@@ -361,7 +440,7 @@
           const t = input('border rounded-xl p-2 col-span-5', ev.title, 'Tiêu đề');
           const time = input('border rounded-xl p-2 col-span-3', ev.time||'', 'HH:MM');
           const note = input('border rounded-xl p-2 col-span-3', ev.notes||'', 'Ghi chú');
-          const del = button('text-xs underline col-span-1','Xoá');
+          const del = button('text-xs text-red-500 col-span-1','Xoá');
           t.oninput=()=>{ ev.title=t.value; save(); };
           time.oninput=()=>{ ev.time=time.value; save(); };
           note.oninput=()=>{ ev.notes=note.value; save(); };
@@ -392,7 +471,7 @@
         const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=!!t.done; cb.onchange=()=>{ t.done=cb.checked; save(); renderTodos(); };
         const span = el('span','', t.text);
         label.append(cb, span);
-        const del = button('text-xs underline','Xoá'); del.onclick=()=>{ db.todos = db.todos.filter(x=>x.id!==t.id); save(); renderTodos(); };
+        const del = button('text-xs text-red-500','Xoá'); del.onclick=()=>{ db.todos = db.todos.filter(x=>x.id!==t.id); save(); renderTodos(); };
         row.append(label,del); box.append(row);
       })
       wrap.append(box);
@@ -433,6 +512,10 @@
       db.todos.push({id:uid(), text, due: todoDue.value || todayISO(), done:false});
       todoText.value=''; save(); renderTodos();
     };
+
+    // explicit saves for timetable & routine
+    const st = document.getElementById('saveTimetable'); if(st) st.onclick = ()=>{ save(); notify('Đã lưu thời khoá biểu'); };
+    const sr = document.getElementById('saveRoutine'); if(sr) sr.onclick = ()=>{ save(); notify('Đã lưu lịch sinh hoạt'); };
   }
 
   // Auto carry-over on day change since last open
