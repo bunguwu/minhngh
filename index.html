@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,23 +8,74 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <meta name="color-scheme" content="light dark" />
   <style>
-    .container {max-width: 1100px;background-color:aqua;}
-    .tab-active{background:#000;color:#fff}
-    /* simple utility */
-    .card{background:#fff;border-radius:1rem;box-shadow:0 8px 20px rgba(0,0,0,.06)}
-    @media (prefers-color-scheme: dark){
-      body{background:#0b1220;color:#e6ebf5}
-      .card{background:#0f172a;border:1px solid #1e293b}
-      input,textarea,select{background:#0b1220;color:#e6ebf5;border-color:#334155}
-      .border{border-color:#334155}
+    :root {
+      --bg: #222831;
+      --surface: #393E46;
+      --accent: #00ADB5;
+      --text: #EEEEEE;
+      --muted: #b8c2cc;
+      --border: #4b5563;
+      --on-accent: #222831
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text)
+    }
+
+    .container {
+      max-width: 1100px
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 1rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, .12);
+      border: 1px solid var(--border)
+    }
+
+    .tab-active {
+      background: var(--accent) !important;
+      color: var(--on-accent) !important;
+      border-color: var(--accent) !important
+    }
+
+    .bg-surface {
+      background: var(--surface) !important;
+      color: var(--text) !important
+    }
+
+    .bg-accent {
+      background: var(--accent) !important
+    }
+
+    .text-accent-ink {
+      color: var(--on-accent) !important
+    }
+
+    input,
+    textarea,
+    select {
+      background: var(--bg);
+      color: var(--text);
+      border-color: var(--border)
+    }
+
+    .border {
+      border-color: var(--border) !important
+    }
+
+    .backdrop-blur {
+      backdrop-filter: saturate(120%) blur(6px)
     }
   </style>
 </head>
+
 <body class="bg-slate-100 min-h-screen">
   <!-- Top Bar -->
   <div class="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-slate-200">
     <div class="container mx-auto px-4 py-3 flex items-center gap-2">
-      <div class="font-semibold">Minh Ngh Hub</div>
+      <div class="font-semibold">Personal Hub</div>
       <div class="ml-auto flex gap-2">
         <button id="buildTomorrowBtn" class="px-3 py-1.5 rounded-xl border">Build Tomorrow</button>
         <button id="exportBtn" class="px-3 py-1.5 rounded-xl border">Export</button>
@@ -35,415 +87,43 @@
     </div>
   </div>
 
+
   <div class="container mx-auto px-4">
     <div id="notice" class="hidden mt-3 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm"></div>
 
+
     <!-- Tabs -->
     <div class="flex gap-2 mt-4 mb-4">
-      <button data-tab="profile" class="tab px-4 py-2 rounded-xl border bg-white">Profile</button>
-      <button data-tab="timetable" class="tab px-4 py-2 rounded-xl border bg-white">Thời khoá biểu</button>
-      <button data-tab="routine" class="tab px-4 py-2 rounded-xl border bg-white">Lịch sinh hoạt</button>
-      <button data-tab="todos" class="tab px-4 py-2 rounded-xl border bg-white">To‑Do</button>
+      <button data-tab="profile" class="tab px-4 py-2 rounded-xl border bg-surface">Profile</button>
+      <button data-tab="timetable" class="tab px-4 py-2 rounded-xl border bg-surface">Thời khoá biểu</button>
+      <button data-tab="routine" class="tab px-4 py-2 rounded-xl border bg-surface">Lịch sinh hoạt</button>
+      <button data-tab="todos" class="tab px-4 py-2 rounded-xl border bg-surface">To‑Do</button>
     </div>
+
 
     <!-- Profile -->
     <section id="tab-profile" class="card p-5 mb-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-xl font-semibold">Thông tin cá nhân</h2>
-        <button id="saveProfile" class="px-3 py-1.5 rounded-xl bg-black text-white text-sm">Save</button>
+        <button id="saveProfile" class="px-3 py-1.5 rounded-xl bg-accent text-accent-ink text-sm">Save</button>
       </div>
-      <div class="grid md:grid-cols-3 gap-6">
+      <div class="grid md:grid-cols-1 gap-6">
         <div>
-          <img id="avatarPreview" src="" alt="avatar" class="w-full aspect-square object-cover rounded-2xl"/>
-          <input id="avatarUrl" class="mt-3 w-full border rounded-xl p-2" placeholder="Avatar URL" />
-        </div>
-        <div class="md:col-span-2">
           <div class="grid grid-cols-2 gap-3">
             <input id="name" class="border rounded-xl p-2" placeholder="Họ tên" />
             <input id="email" class="border rounded-xl p-2" placeholder="Email" />
             <input id="phone" class="border rounded-xl p-2" placeholder="SĐT" />
             <input id="location" class="border rounded-xl p-2" placeholder="Địa điểm" />
           </div>
-          <textarea id="description" class="mt-3 w-full border rounded-xl p-2" rows="3" placeholder="Mô tả / mục tiêu"></textarea>
+          <textarea id="description" class="mt-3 w-full border rounded-xl p-2" rows="3"
+            placeholder="Mô tả / mục tiêu"></textarea>
+
 
           <div class="mt-4">
             <div class="flex items-center justify-between">
               <h3 class="font-medium">Liên kết MXH</h3>
               <button id="addSocial" class="text-sm underline">+ Thêm</button>
             </div>
-            <div id="socials" class="mt-2 space-y-2"></div>
           </div>
 
-          <div class="mt-4">
-            <div class="flex items-center justify-between">
-              <h3 class="font-medium">Danh hiệu theo năm</h3>
-              <button id="addAchievement" class="text-sm underline">+ Thêm</button>
-            </div>
-            <div id="achievements" class="mt-2 space-y-2"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Timetable -->
-    <section id="tab-timetable" class="hidden card p-5 mb-6">
-      <h2 class="text-xl font-semibold mb-4">Thời khoá biểu (mỗi môn có Note + BTVN)</h2>
-      <div id="timetableWrap" class="grid md:grid-cols-2 gap-4"></div>
-    </section>
-
-    <!-- Routine -->
-    <section id="tab-routine" class="hidden card p-5 mb-6">
-      <h2 class="text-xl font-semibold mb-4">Lịch sinh hoạt (lặp tuần + sự kiện)</h2>
-      <div id="routineWrap" class="space-y-4"></div>
-    </section>
-
-    <!-- Todos -->
-    <section id="tab-todos" class="hidden card p-5 mb-6">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="text-xl font-semibold">To‑Do & Kết chuyển sang ngày mai</h2>
-        <div class="text-sm text-slate-500">Hôm nay: <span id="todayBadge"></span></div>
-      </div>
-      <div class="flex flex-col md:flex-row gap-2 mb-3">
-        <input id="todoText" class="border rounded-xl p-2 flex-1" placeholder="Nhiệm vụ"/>
-        <input id="todoDue" type="date" class="border rounded-xl p-2"/>
-        <button id="todoAdd" class="px-4 py-2 rounded-xl bg-black text-white">Thêm</button>
-      </div>
-      <div id="todoGroups" class="space-y-4"></div>
-    </section>
-
-    <footer class="text-center text-xs text-slate-500 pb-8">Local-first • Auto-save • No backend required • HTML + Tailwind</footer>
-  </div>
-
-<script>
-(function(){
-  const STORAGE_KEY = 'personal_hub_html_v1';
-  const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const timeBlocks = [
-    {id:'morning', label:'Sáng'},
-    {id:'noon', label:'Trưa'},
-    {id:'afternoon', label:'Chiều'},
-    {id:'evening', label:'Tối'}
-  ];
-  const todayISO = () => new Date().toISOString().slice(0,10);
-  const addDays = (iso, d)=>{const dt=new Date(iso); dt.setDate(dt.getDate()+d); return dt.toISOString().slice(0,10)};
-  const uid = ()=>Math.random().toString(36).slice(2,10);
-
-  const defaultData = {
-    meta:{lastOpened: todayISO()},
-    profile:{
-      name:'Your Name',
-      avatarUrl:'https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=500&auto=format&fit=crop',
-      description:'Mục tiêu: AI-driven entrepreneur. Học TSA, build sản phẩm AI.',
-      basics:{email:'you@example.com', phone:'+84 xxx', location:'VN'},
-      socials:[{id:uid(),label:'Facebook',url:'https://facebook.com/'}],
-      achievements:[{id:uid(),year:new Date().getFullYear(), title:'Top 1 lớp Toán'}]
-    },
-    timetable:Object.fromEntries(weekdays.map(d=>[d,[
-      {id:uid(),subject:'Toán',note:'Chương đạo hàm',homework:true},
-      {id:uid(),subject:'Vật lý',note:'Điện xoay chiều',homework:false}
-    ]])),
-    routine:Object.fromEntries(weekdays.map(d=>[d,{
-      morning:[{id:uid(),title:'Gym UL/PPL',notes:"45'",recurring:true}],
-      noon:[],
-      afternoon:[{id:uid(),title:'Học TSA (Toán)',notes:"90'",recurring:true}],
-      evening:[{id:uid(),title:'Tiếng Anh (IELTS)',notes:"60'",recurring:true}],
-      events:[]
-    }])),
-    todos:[
-      {id:uid(),text:'Ôn 20 câu TSA dạng đồ thị', due: todayISO(), done:false},
-      {id:uid(),text:'Viết 300 chữ Văn (Cỏ Lau)', due: todayISO(), done:false}
-    ]
-  };
-
-  // State
-  let db = load();
-
-  // Boot
-  initTabs();
-  hydrateProfile();
-  renderTimetable();
-  renderRoutine();
-  renderTodos();
-  attachTopbar();
-  autoCarryOverIfNewDay();
-
-  // Utils
-  function load(){
-    try{const raw=localStorage.getItem(STORAGE_KEY); return raw? JSON.parse(raw): structuredClone(defaultData);}catch(e){return structuredClone(defaultData)}
-  }
-  function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
-  function notify(msg){
-    const el=document.getElementById('notice');
-    el.textContent=msg; el.classList.remove('hidden');
-    setTimeout(()=>el.classList.add('hidden'), 3200);
-  }
-
-  // Tabs
-  function initTabs(){
-    const tabs=[...document.querySelectorAll('.tab')];
-    const sections={
-      profile: document.getElementById('tab-profile'),
-      timetable: document.getElementById('tab-timetable'),
-      routine: document.getElementById('tab-routine'),
-      todos: document.getElementById('tab-todos')
-    };
-    function setTab(id){
-      tabs.forEach(t=> t.classList.toggle('tab-active', t.dataset.tab===id));
-      Object.entries(sections).forEach(([k,sec])=> sec.classList.toggle('hidden', k!==id));
-    }
-    tabs.forEach(t=> t.addEventListener('click', ()=> setTab(t.dataset.tab)));
-    setTab('profile');
-  }
-
-  // Profile
-  function hydrateProfile(){
-    const p = db.profile;
-    // inputs
-    const avatarUrl = byId('avatarUrl');
-    const avatarPreview = byId('avatarPreview');
-    const name = byId('name');
-    const email = byId('email');
-    const phone = byId('phone');
-    const location = byId('location');
-    const description = byId('description');
-
-    avatarUrl.value = p.avatarUrl; avatarPreview.src=p.avatarUrl;
-    name.value=p.name; email.value=p.basics.email; phone.value=p.basics.phone; location.value=p.basics.location; description.value=p.description;
-
-    avatarUrl.addEventListener('input', ()=>{ avatarPreview.src = avatarUrl.value; });
-
-    // socials
-    const socialsWrap = byId('socials');
-    function renderSocials(){
-      socialsWrap.innerHTML='';
-      p.socials.forEach((s,idx)=>{
-        const row = el('div', 'flex gap-2');
-        const label = input('border rounded-xl p-2 flex-1', s.label, 'Nhãn (Facebook, GitHub...)');
-        const url = input('border rounded-xl p-2 flex-[2]', s.url, 'URL');
-        const del = button('text-xs underline', 'Xoá');
-        label.addEventListener('input', ()=> s.label=label.value);
-        url.addEventListener('input', ()=> s.url=url.value);
-        del.addEventListener('click', ()=>{ p.socials.splice(idx,1); renderSocials(); save(); });
-        row.append(label,url,del); socialsWrap.append(row);
-      })
-      save();
-    }
-    renderSocials();
-    byId('addSocial').onclick = ()=>{ p.socials.push({id:uid(),label:'',url:''}); renderSocials(); };
-
-    // achievements
-    const achWrap = byId('achievements');
-    function renderAch(){
-      achWrap.innerHTML='';
-      p.achievements.forEach((a,idx)=>{
-        const row = el('div','grid grid-cols-6 gap-2 items-center');
-        const year = input('border rounded-xl p-2 col-span-2', a.year, 'Năm', 'number');
-        const title = input('border rounded-xl p-2 col-span-4', a.title, 'Danh hiệu');
-        const del = button('text-xs underline col-span-1 hidden','X');
-        year.addEventListener('input', ()=> a.year = Number(year.value||new Date().getFullYear()));
-        title.addEventListener('input', ()=> a.title = title.value);
-        row.append(year,title); achWrap.append(row);
-      });
-      save();
-    }
-    renderAch();
-    byId('addAchievement').onclick = ()=>{ p.achievements.push({id:uid(),year:new Date().getFullYear(), title:''}); renderAch(); };
-
-    byId('saveProfile').onclick = ()=>{
-      db.profile = {
-        ...p,
-        name: name.value,
-        avatarUrl: avatarUrl.value,
-        description: description.value,
-        basics:{ email: email.value, phone: phone.value, location: location.value },
-      };
-      save();
-      notify('Đã lưu hồ sơ');
-    }
-  }
-
-  // Timetable
-  function renderTimetable(){
-    const wrap = byId('timetableWrap');
-    wrap.innerHTML='';
-    weekdays.forEach((d)=>{
-      const card = el('div','border rounded-2xl p-4');
-      const header = el('div','flex items-center justify-between mb-2');
-      header.append(el('h3','font-semibold',d));
-      const addBtn = button('text-sm underline','+ Môn');
-      header.append(addBtn);
-      card.append(header);
-      const list = el('div','space-y-2');
-      card.append(list);
-      wrap.append(card);
-
-      function draw(){
-        list.innerHTML='';
-        db.timetable[d].forEach((r,idx)=>{
-          const row = el('div','grid grid-cols-12 gap-2 items-center');
-          const subj = input('border rounded-xl p-2 col-span-3', r.subject,'Môn');
-          const note = input('border rounded-xl p-2 col-span-7', r.note,'Ghi chú');
-          const label = el('label','col-span-1 flex items-center gap-1 text-sm');
-          const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=!!r.homework; cb.addEventListener('change',()=>{ r.homework = cb.checked; save(); });
-          label.append(cb, el('span','', 'HW'));
-          const del = button('text-xs underline col-span-1','Xoá');
-          del.onclick=()=>{ db.timetable[d].splice(idx,1); save(); draw(); };
-          subj.oninput=()=>{ r.subject=subj.value; save(); };
-          note.oninput=()=>{ r.note=note.value; save(); };
-          row.append(subj,note,label,del);
-          list.append(row);
-        });
-      }
-      draw();
-      addBtn.onclick = ()=>{ db.timetable[d].push({id:uid(),subject:'',note:'',homework:false}); save(); draw(); };
-    });
-  }
-
-  // Routine
-  function renderRoutine(){
-    const wrap = byId('routineWrap');
-    wrap.innerHTML='';
-    weekdays.forEach((d)=>{
-      const dayCard = el('div','border rounded-2xl p-4');
-      const header = el('div','flex items-center justify-between');
-      header.append(el('h3','font-semibold', d));
-      const addEventBtn = button('text-sm underline','+ Sự kiện');
-      addEventBtn.onclick = ()=>{ db.routine[d].events.push({id:uid(),title:'Sự kiện',time:'',notes:'',recurring:false}); save(); draw(); };
-      header.append(addEventBtn);
-      dayCard.append(header);
-
-      const grid = el('div','grid md:grid-cols-2 gap-3 mt-3');
-      dayCard.append(grid);
-
-      function blockUI(blockId,label){
-        const box = el('div','bg-slate-50 rounded-xl p-3');
-        const top = el('div','flex items-center justify-between mb-2');
-        top.append(el('div','font-medium',label));
-        const add = button('text-xs underline','+ Hoạt động');
-        add.onclick = ()=>{ db.routine[d][blockId].push({id:uid(),title:'',notes:'',recurring:true}); save(); draw(); };
-        top.append(add); box.append(top);
-        const list = el('div','space-y-2');
-        db.routine[d][blockId].forEach((it,idx)=>{
-          const row = el('div','grid grid-cols-12 gap-2 items-center');
-          const title = input('border rounded-xl p-2 col-span-5', it.title, 'Tiêu đề');
-          const notes = input('border rounded-xl p-2 col-span-5', it.notes, 'Ghi chú/Thời lượng');
-          const loop = el('label','col-span-1 text-xs flex items-center gap-1');
-          const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=!!it.recurring; cb.onchange=()=>{ it.recurring=cb.checked; save(); };
-          loop.append(cb, el('span','', 'Loop'));
-          const del = button('text-xs underline col-span-1','Xoá'); del.onclick=()=>{ db.routine[d][blockId].splice(idx,1); save(); draw(); };
-          title.oninput=()=>{ it.title=title.value; save(); };
-          notes.oninput=()=>{ it.notes=notes.value; save(); };
-          row.append(title,notes,loop,del);
-          list.append(row);
-        });
-        box.append(list);
-        return box;
-      }
-
-      timeBlocks.forEach(b=> grid.append(blockUI(b.id,b.label)));
-
-      // events
-      const evs = db.routine[d].events;
-      if(evs.length){
-        const evWrap = el('div','mt-3');
-        evWrap.append(el('div','font-medium mb-1','Sự kiện'));
-        evs.forEach((ev,idx)=>{
-          const row = el('div','grid grid-cols-12 gap-2 items-center');
-          const t = input('border rounded-xl p-2 col-span-5', ev.title, 'Tiêu đề');
-          const time = input('border rounded-xl p-2 col-span-3', ev.time||'', 'HH:MM');
-          const note = input('border rounded-xl p-2 col-span-3', ev.notes||'', 'Ghi chú');
-          const del = button('text-xs underline col-span-1','Xoá');
-          t.oninput=()=>{ ev.title=t.value; save(); };
-          time.oninput=()=>{ ev.time=time.value; save(); };
-          note.oninput=()=>{ ev.notes=note.value; save(); };
-          del.onclick=()=>{ db.routine[d].events.splice(idx,1); save(); draw(); };
-          row.append(t,time,note,del); evWrap.append(row);
-        })
-        dayCard.append(evWrap);
-      }
-
-      wrap.append(dayCard);
-      function draw(){ renderRoutine(); }
-    })
-  }
-
-  // Todos
-  function renderTodos(){
-    byId('todayBadge').textContent = todayISO();
-    const groups = {};
-    for(const t of db.todos){ (groups[t.due] ||= []).push(t); }
-    const sorted = Object.entries(groups).sort(([a],[b])=> a<b? -1:1);
-    const wrap = byId('todoGroups'); wrap.innerHTML='';
-    sorted.forEach(([date, items])=>{
-      const box = el('div','border rounded-2xl p-3');
-      box.append(el('div','font-medium mb-2', date));
-      items.forEach((t)=>{
-        const row = el('div','flex items-center justify-between gap-3');
-        const label = el('label','flex items-center gap-2 flex-1' + (t.done? ' line-through text-slate-400':''));
-        const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=!!t.done; cb.onchange=()=>{ t.done=cb.checked; save(); renderTodos(); };
-        const span = el('span','', t.text);
-        label.append(cb, span);
-        const del = button('text-xs underline','Xoá'); del.onclick=()=>{ db.todos = db.todos.filter(x=>x.id!==t.id); save(); renderTodos(); };
-        row.append(label,del); box.append(row);
-      })
-      wrap.append(box);
-    })
-  }
-
-  // Topbar actions
-  function attachTopbar(){
-    byId('exportBtn').onclick = ()=>{
-      const blob = new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download = `personal_hub_${todayISO()}.json`; a.click(); URL.revokeObjectURL(url);
-    };
-    byId('importInput').addEventListener('change', (e)=>{
-      const f = e.target.files?.[0]; if(!f) return;
-      const reader = new FileReader();
-      reader.onload = ()=>{
-        try{ db = JSON.parse(reader.result.toString()); save(); location.reload(); }
-        catch(err){ alert('Import lỗi: '+err); }
-      };
-      reader.readAsText(f);
-    });
-    byId('buildTomorrowBtn').onclick = ()=>{
-      const today = todayISO();
-      const tomorrow = addDays(today,1);
-      const undone = db.todos.filter(t=> t.due===today && !t.done);
-      if(!undone.length){ notify('Không có việc tồn đọng hôm nay. Great job!'); return; }
-      db.todos = db.todos.map(t=> (t.due===today && !t.done)? {...t, due: tomorrow}: t);
-      save(); renderTodos();
-      notify(`Đã chuyển ${undone.length} việc sang ngày mai (${tomorrow}).`);
-    };
-
-    // add todo
-    const todoText = byId('todoText');
-    const todoDue = byId('todoDue'); todoDue.value = todayISO();
-    byId('todoAdd').onclick = ()=>{
-      const text = (todoText.value||'').trim(); if(!text) return;
-      db.todos.push({id:uid(), text, due: todoDue.value || todayISO(), done:false});
-      todoText.value=''; save(); renderTodos();
-    };
-  }
-
-  // Auto carry-over on day change since last open
-  function autoCarryOverIfNewDay(){
-    const last = db.meta?.lastOpened || todayISO();
-    const today = todayISO();
-    if(last !== today){
-      db.todos = db.todos.map(t=> (t.due < today && !t.done) ? {...t, due: today}: t);
-      notify('Đã kết chuyển việc chưa xong từ '+ last +' sang '+ today);
-    }
-    db.meta = {...(db.meta||{}), lastOpened: today};
-    save();
-  }
-
-  // DOM helpers
-  function byId(id){return document.getElementById(id)}
-  function el(tag, cls, text){ const x=document.createElement(tag); if(cls) x.className=cls; if(text!=null) x.textContent=text; return x; }
-  function input(cls, value, placeholder, type='text'){ const i=document.createElement('input'); i.type=type; i.className=cls; i.placeholder=placeholder||''; i.value = value ?? ''; return i; }
-  function button(cls, text){ const b=document.createElement('button'); b.className=cls; b.textContent=text; return b; }
-})();
-</script>
-</body>
 </html>
