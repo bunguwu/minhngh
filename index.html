@@ -323,6 +323,11 @@
                     <button class="btn ghost" id="editProfileBtn">✏️ Edit</button>
                     <button class="btn" id="resetDataBtn" title="Xóa dữ liệu local (không xóa CONFIG)">🧹 Reset
                         Local</button>
+
+                    <!-- 🔽 ADD: Export/Import -->
+                    <button class="btn" id="exportBtn" title="Xuất toàn bộ dữ liệu">⬇️ Export</button>
+                    <button class="btn" id="importBtn" title="Nhập dữ liệu từ file">⬆️ Import</button>
+                    <input type="file" id="importFile" accept="application/json" style="display:none" />
                 </div>
             </div>
             <div class="kpi" style="margin-top:10px">
@@ -645,7 +650,134 @@
             d.setDate(d.getDate() + n);
             return d.toISOString().slice(0, 10);
         }
+        // ======= BACKUP / IMPORT / EXPORT UTIL =======
+        const SCHEMA_VERSION = 1;
 
+        function download(filename, text) {
+            const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = filename; a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function safeParseJSON(str) {
+            try { return JSON.parse(str); } catch { return null; }
+        }
+
+        function validatePayload(payload) {
+            // Kỳ vọng khóa chính
+            const must = ["version", "exported_at", "data"];
+            if (!payload || typeof payload !== "object") return "File không hợp lệ.";
+            for (const k of must) if (!(k in payload)) return `Thiếu khóa '${k}'.`;
+
+            const d = payload.data || {};
+            const keys = ["PROFILE", "CLASSES", "LIFE", "TODOS"];
+            for (const k of keys) if (!(k in d)) return `Thiếu data.${k}.`;
+
+            // Kiểm tra dạng dữ liệu cơ bản
+            if (typeof d.PROFILE !== "object") return "PROFILE không hợp lệ.";
+            if (!Array.isArray(d.CLASSES)) return "CLASSES không hợp lệ.";
+            if (!Array.isArray(d.LIFE)) return "LIFE không hợp lệ.";
+            if (!Array.isArray(d.TODOS)) return "TODOS không hợp lệ.";
+
+            return null; // OK
+        }
+
+        function ensureIdsAfterImport() {
+            // Reuse ensureIds & ensureClassIds logic
+            const todos = (store.get(KEY.TODOS, []) || []).map(t => ({ ...t, id: t.id ? String(t.id) : uid() }));
+            store.set(KEY.TODOS, todos);
+            const classes = (store.get(KEY.CLASSES, []) || []).map(c => ({ ...c, id: c.id ? String(c.id) : uid() }));
+            store.set(KEY.CLASSES, classes);
+        }
+
+        // Merge strategy (id-aware cho TODOS/CLASSES; append cho LIFE; replace PROFILE)
+        function mergeArraysById(oldArr, newArr, idKey = "id") {
+            const map = new Map((oldArr || []).map(x => [String(x[idKey] || ""), x]));
+            for (const item of newArr || []) {
+                const k = String(item[idKey] || "");
+                if (k && map.has(k)) {
+                    map.set(k, { ...map.get(k), ...item });
+                } else if (k) {
+                    map.set(k, { ...item });
+                } else {
+                    // nếu item chưa có id -> gán mới
+                    map.set(uid(), { ...item, [idKey]: uid() });
+                }
+            }
+            return Array.from(map.values());
+        }
+
+        function exportAll() {
+            const payload = {
+                product: "MinhNgh Hub",
+                version: SCHEMA_VERSION,
+                exported_at: new Date().toISOString(),
+                data: {
+                    PROFILE: store.get(KEY.PROFILE, CONFIG.profile),
+                    CLASSES: store.get(KEY.CLASSES, []),
+                    LIFE: store.get(KEY.LIFE, []),
+                    TODOS: store.get(KEY.TODOS, []),
+                }
+            };
+            download(`minhngh_hub_export_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(payload, null, 2));
+        }
+
+        function importAllFromText(text, { mode = "replace" } = {}) {
+            const payload = safeParseJSON(text);
+            const err = validatePayload(payload);
+            if (err) { alert("Import lỗi: " + err); return; }
+
+            // Auto-backup trước khi nhập
+            try {
+                const backup = {
+                    product: "MinhNgh Hub",
+                    version: SCHEMA_VERSION,
+                    exported_at: new Date().toISOString(),
+                    data: {
+                        PROFILE: store.get(KEY.PROFILE, CONFIG.profile),
+                        CLASSES: store.get(KEY.CLASSES, []),
+                        LIFE: store.get(KEY.LIFE, []),
+                        TODOS: store.get(KEY.TODOS, []),
+                    }
+                };
+                download(`minhngh_hub_autobackup_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(backup, null, 2));
+            } catch { }
+
+            const d = payload.data;
+            if (mode === "replace") {
+                store.set(KEY.PROFILE, d.PROFILE);
+                store.set(KEY.CLASSES, d.CLASSES);
+                store.set(KEY.LIFE, d.LIFE);
+                store.set(KEY.TODOS, d.TODOS);
+            } else { // "merge"
+                // PROFILE: replace cứng để tránh xung đột
+                store.set(KEY.PROFILE, d.PROFILE);
+
+                // CLASSES/TODOS: merge theo id
+                const mergedClasses = mergeArraysById(store.get(KEY.CLASSES, []), d.CLASSES, "id");
+                const mergedTodos = mergeArraysById(store.get(KEY.TODOS, []), d.TODOS, "id");
+
+                // LIFE: append + lọc trùng thô (day+block+title)
+                const oldLife = store.get(KEY.LIFE, []);
+                const keyLife = it => `${it.day}|${it.block}|${(it.title || "").trim().toLowerCase()}`;
+                const seen = new Set(oldLife.map(keyLife));
+                const appended = [...oldLife];
+                for (const it of d.LIFE) {
+                    const k = keyLife(it);
+                    if (!seen.has(k)) { appended.push(it); seen.add(k); }
+                }
+
+                store.set(KEY.CLASSES, mergedClasses);
+                store.set(KEY.LIFE, appended);
+                store.set(KEY.TODOS, mergedTodos);
+            }
+
+            ensureIdsAfterImport();
+            renderAll();
+            alert("Import thành công.");
+        }
         /* ======= STORAGE LAYER ======= */
         const todoFilter = { status: 'all', due: 'today', tag: '', q: '' };
         let selectedIds = new Set();
@@ -964,7 +1096,25 @@
             }
             store.init(); ensureIds(); renderAll();
             ensureClassIds();
-            // Classes form
+            // ======= Export / Import bindings =======
+            $("#exportBtn").onclick = () => {
+                exportAll();
+            };
+
+            $("#importBtn").onclick = () => {
+                const mode = confirm("OK = REPLACE (ghi đè), Cancel = MERGE (gộp thông minh).") ? "replace" : "merge";
+                const fi = $("#importFile");
+                fi.value = "";
+                fi.onchange = (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => importAllFromText(String(reader.result || ""), { mode });
+                    reader.readAsText(file, "utf-8");
+                };
+                fi.click();
+            };
+
 
 
             // Defaults
