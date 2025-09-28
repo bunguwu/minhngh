@@ -958,10 +958,11 @@
         function renderAll() { renderProfile(); renderClasses(); renderLife(); ensureIds(); renderTodos(); renderKPIs(); }
 
         document.addEventListener("DOMContentLoaded", () => {
-            store.init(function ensureClassIds() {
+            function ensureClassIds() {
                 const arr = store.get(KEY.CLASSES, []).map(c => ({ ...c, id: c.id ? String(c.id) : uid() }));
                 store.set(KEY.CLASSES, arr);
-            }); ensureIds(); renderAll();
+            }
+            store.init(); ensureIds(); renderAll();
             ensureClassIds();
             // Classes form
 
