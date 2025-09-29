@@ -600,6 +600,8 @@
         /* ======= UTILITIES ======= */
         function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
+        let lifeEditingId = null; // đang sửa mục LIFE nào (theo id)
+
         let classEditingId = null; // đang sửa lớp nào (ID) hay không
 
         const $ = (sel, root = document) => root.querySelector(sel);
@@ -904,38 +906,59 @@
                 $$("#lifeBoard .list").forEach(ul => ul.innerHTML = `<div class="empty">Chưa có mục nào.</div>`);
                 return;
             }
-            // group by block, then sort by day then title
-            data.sort((a, b) => a.block.localeCompare(b.block) || (a.day - b.day) || a.title.localeCompare(b.title));
-            data.forEach((it, idx) => {
+
+            // sort hiển thị nhưng vẫn giữ id của item
+            const sorted = [...data].sort(
+                (a, b) => a.block.localeCompare(b.block) || (a.day - b.day) || (a.title || "").localeCompare(b.title || "")
+            );
+
+            sorted.forEach(it => {
                 const container = $(`#lifeBoard .list[data-block="${it.block}"]`);
                 const div = document.createElement("div"); div.className = "item";
                 div.innerHTML = `
-        <div>
-          <div class="row small">
-            <span class="badge">${DAYS[it.day]}</span>
-            <span class="badge ${it.repeat === 'yes' ? 'ok' : ''}">${it.repeat === 'yes' ? 'Lặp tuần' : 'Một lần'}</span>
-          </div>
-          <div style="margin-top:6px"><b>${it.title}</b> <span class="muted">${it.note ? ("• " + it.note) : ""}</span></div>
+      <div>
+        <div class="row small">
+          <span class="badge">${DAYS[it.day]}</span>
+          <span class="badge ${it.repeat === 'yes' ? 'ok' : ''}">${it.repeat === 'yes' ? 'Lặp tuần' : 'Một lần'}</span>
         </div>
-        <div class="row">
-          <button class="btn ghost" data-life-edit="${idx}">✏️</button>
-          <button class="btn danger" data-life-del="${idx}">🗑️</button>
-        </div>`;
-                container.appendChild(div);
+        <div style="margin-top:6px"><b>${it.title}</b> <span class="muted">${it.note ? ("• " + it.note) : ""}</span></div>
+      </div>
+      <div class="row">
+        <button class="btn ghost" data-life-edit-id="${it.id}">✏️</button>
+        <button class="btn danger" data-life-del-id="${it.id}">🗑️</button>
+      </div>`;
+                container?.appendChild(div);
             });
-            $$("#lifeBoard [data-life-del]").forEach(btn => {
+
+            // Delete by id
+            $$("#lifeBoard [data-life-del-id]").forEach(btn => {
                 btn.onclick = () => {
-                    const i = +btn.dataset.lifeDel;
-                    const arr = store.get(KEY.LIFE, []); arr.splice(i, 1); store.set(KEY.LIFE, arr); renderLife();
+                    const id = String(btn.getAttribute("data-life-del-id"));
+                    const arr = store.get(KEY.LIFE, []).filter(x => String(x.id) !== id);
+                    store.set(KEY.LIFE, arr);
+                    if (lifeEditingId === id) lifeEditingId = null; // nếu đang sửa đúng item vừa xoá
+                    renderLife();
                 };
             });
-            $$("#lifeBoard [data-life-edit]").forEach(btn => {
+
+            // Edit by id (prefill form, KHÔNG splice)
+            $$("#lifeBoard [data-life-edit-id]").forEach(btn => {
                 btn.onclick = () => {
-                    const i = +btn.dataset.lifeEdit;
-                    const arr = store.get(KEY.LIFE, []), it = arr[i];
-                    const f = $("#lifeForm"); f.day.value = it.day; f.block.value = it.block;
-                    f.title.value = it.title; f.note.value = it.note || ""; f.repeat.value = it.repeat || "yes";
-                    arr.splice(i, 1); store.set(KEY.LIFE, arr); renderLife();
+                    const id = String(btn.getAttribute("data-life-edit-id"));
+                    const arr = store.get(KEY.LIFE, []);
+                    const it = arr.find(x => String(x.id) === id);
+                    if (!it) return;
+
+                    const f = $("#lifeForm");
+                    f.day.value = it.day;
+                    f.block.value = it.block;
+                    f.title.value = it.title;
+                    f.note.value = it.note || "";
+                    f.repeat.value = it.repeat || "yes";
+
+                    lifeEditingId = id;
+                    const submitBtn = f.querySelector('button[type="submit"]');
+                    if (submitBtn) { submitBtn.textContent = "💾 Lưu thay đổi"; submitBtn.classList.add('primary'); }
                     f.scrollIntoView({ behavior: "smooth", block: "center" });
                 };
             });
@@ -1065,6 +1088,14 @@
             const arr = store.get(KEY.TODOS, []).map(t => ({ ...t, id: t.id ? String(t.id) : uid() }));
             store.set(KEY.TODOS, arr);
         }
+        function ensureLifeIds() {
+            const arr = (store.get(KEY.LIFE, []) || []).map(it => ({
+                ...it,
+                id: it.id ? String(it.id) : uid()
+            }));
+            store.set(KEY.LIFE, arr);
+        }
+
         function todoMatchesFilter(t) {
             const today = todayStr();
 
@@ -1095,7 +1126,7 @@
                 store.set(KEY.CLASSES, arr);
             }
             store.init(); ensureIds(); renderAll();
-            ensureClassIds();
+            ensureClassIds(); ensureLifeIds();
             // ======= Export / Import bindings =======
             $("#exportBtn").onclick = () => {
                 exportAll();
@@ -1261,16 +1292,35 @@
             };
 
             // Life form
+            // Life form (CREATE/UPDATE by id)
             $("#lifeForm").onsubmit = (e) => {
                 e.preventDefault();
                 const f = e.target;
-                const obj = {
-                    day: +f.day.value, block: f.block.value, title: f.title.value.trim(),
-                    note: f.note.value.trim(), repeat: f.repeat.value
+                const payload = {
+                    day: +f.day.value,
+                    block: f.block.value,
+                    title: f.title.value.trim(),
+                    note: (f.note.value || "").trim(),
+                    repeat: f.repeat.value
                 };
-                const arr = store.get(KEY.LIFE, []); arr.push(obj); store.set(KEY.LIFE, arr);
-                f.reset(); renderLife();
+                const arr = store.get(KEY.LIFE, []);
+
+                if (lifeEditingId) {
+                    const i = arr.findIndex(x => String(x.id) === String(lifeEditingId));
+                    if (i > -1) arr[i] = { ...arr[i], ...payload };  // giữ nguyên id, update field
+                    lifeEditingId = null;
+                } else {
+                    arr.push({ id: uid(), ...payload });
+                }
+
+                store.set(KEY.LIFE, arr);
+                // reset form & nút
+                f.reset();
+                const submitBtn = f.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.textContent = "➕ Thêm lịch";
+                renderLife();
             };
+
 
             // To-do form
             $("#todoForm").onsubmit = (e) => {
