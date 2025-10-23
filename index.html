@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Minh Ngh Hub</title>
+    <link rel="stylesheet" href="style.css">
     <style>
         :root {
             --bg: #0b0f15;
@@ -502,11 +503,12 @@
                 <div class="pill">
                     <label class="small" style="margin-right:6px">Hạn</label>
                     <select id="fDue">
+                        <option value="all">Tất cả</option>
                         <option value="today">Hôm nay</option>
                         <option value="overdue">Quá hạn</option>
                         <option value="tomorrow">Ngày mai</option>
                         <option value="upcoming">Sắp tới (≥ hôm nay)</option>
-                        <option value="all">Tất cả</option>
+
                     </select>
                 </div>
                 <div class="pill"><input id="fTag" placeholder="Tag (vd: Học/Gym…)" /></div>
@@ -530,6 +532,172 @@
                 <div>
                     <h4 class="small muted">🧩 Chưa hoàn thành hôm nay</h4>
                     <div id="todoUnfinished" class="list"></div>
+                </div>
+            </div>
+        </section>
+        <!-- VOCAB TRAINER -->
+        <section class="card" style="grid-column: span 12" id="vocabSection">
+            <div class="row">
+                <h3 class="title">📘 Vocab Trainer</h3>
+                <div class="sp"></div>
+                <span class="vocab-stat">🔔 Due hôm nay: <b id="vocabDueToday">0</b></span>
+                <button class="btn primary" id="vocabStartBtn">▶️ Bắt đầu ôn</button>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" data-vtab="plan">Planner</button>
+                <button class="tab" data-vtab="deck">Deck</button>
+                <button class="tab" data-vtab="train">Train</button>
+                <button class="tab" data-vtab="stats">Stats</button>
+            </div>
+
+            <!-- Planner -->
+            <div data-vpane="plan">
+                <div class="grid-2">
+                    <div class="cardish">
+                        <h4 class="small muted">🎯 Mục tiêu</h4>
+                        <form id="vPlanForm" class="grid" style="grid-template-columns:repeat(2,1fr);gap:10px">
+                            <div><label>Tổng số từ</label><input name="total" type="number" min="1" value="200"></div>
+                            <div><label>Số ngày</label><input name="days" type="number" min="1" value="10"></div>
+                            <div><label>Bắt đầu</label><input name="start" type="date"></div>
+                            <div><label>Kết thúc</label><input name="end" type="date" disabled></div>
+                            <div style="grid-column:span 2" class="row"><button class="btn primary" type="submit">💾 Lưu
+                                    Planner</button></div>
+                        </form>
+                        <p class="small-muted" id="vPlanSummary"></p>
+                    </div>
+
+                    <div class="cardish">
+                        <h4 class="small muted">⚙️ Tuỳ chỉnh ôn</h4>
+                        <div class="row" style="flex-wrap:wrap; gap:10px">
+                            <span class="pill">Quota/ngày: <b id="vDailyQuota">0</b></span>
+                            <span class="pill">Deck hiện tại: <b id="vActiveDeckName">—</b></span>
+                            <button class="btn ghost" id="vResetSM2">♻️ Reset lịch ôn (chỉ lịch, không xoá từ)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deck -->
+            <div data-vpane="deck" style="display:none">
+                <div class="grid-2">
+                    <div class="cardish">
+                        <h4 class="small muted">📦 Quản lý Deck</h4>
+                        <form id="vDeckForm" class="row">
+                            <input name="name" placeholder="Tên deck (vd: IELTS Core)" required style="flex:1">
+                            <button class="btn primary" type="submit">➕ Tạo deck</button>
+                        </form>
+                        <div id="vDeckList" class="list" style="margin-top:8px"></div>
+                    </div>
+
+                    <div class="cardish">
+                        <h4 class="small muted">📥 Nhập từ</h4>
+                        <form id="vImportForm" class="grid" style="grid-template-columns:1fr 1fr; gap:10px">
+                            <div style="grid-column:span 2">
+                                <label>Mỗi dòng 1 từ (English). Có thể thêm nghĩa sau dấu “|”, vd: <i>robust|mạnh
+                                        mẽ</i></label>
+                                <textarea name="bulk" rows="6"
+                                    placeholder="resilient|kiên cường&#10;coherent|mạch lạc"></textarea>
+                            </div>
+                            <div>
+                                <label>Tự enrich (API)</label>
+                                <select name="enrich">
+                                    <option value="yes">Yes</option>
+                                    <option value="no">No</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Deck</label>
+                                <select name="deck" id="vDeckSelect"></select>
+                            </div>
+                            <div style="grid-column:span 2" class="row">
+                                <button class="btn primary" type="submit">⬆️ Import</button>
+                                <span class="small-muted">Sẽ kéo: synonyms, antonyms, part-of-speech; tự tạo forms cơ
+                                    bản.</span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <!-- Words in Active Deck -->
+                <div class="cardish" style="margin-top:10px">
+                    <h4 class="small muted">🗂 Từ trong deck đang chọn</h4>
+                    <div class="row" style="gap:8px;flex-wrap:wrap">
+                        <label class="pill small">
+                            Deck:
+                            <select id="vActiveDeckSelect" style="margin-left:6px"></select>
+                        </label>
+                        <label class="pill small">
+                            <input type="checkbox" id="vSelectAllWords" style="margin-right:6px"> Chọn tất cả
+                        </label>
+                        <span class="pill small">Đã chọn: <b id="vSelWordsCount">0</b></span>
+                        <button class="btn danger" id="vDeleteSelectedWords" type="button">🗑️ Xoá từ đã chọn</button>
+                    </div>
+                    <div id="vWordList" class="list" style="margin-top:8px"></div>
+                </div>
+
+            </div>
+
+            <!-- Train -->
+            <div data-vpane="train" style="display:none">
+                <div class="row" style="margin-bottom:8px">
+                    <span class="pill">Chế độ:
+                        <select id="vMode">
+                            <option value="auto">Auto mix</option>
+                            <option value="flash">Flashcards</option>
+                            <option value="cloze">Cloze / Điền khuyết</option>
+                            <option value="quiz">Mini Quiz</option>
+                            <option value="sentence">Tự đặt câu</option>
+                        </select>
+                    </span>
+                    <span class="pill">Batch:
+                        <select id="vBatch">
+                            <option>10</option>
+                            <option selected>20</option>
+                            <option>30</option>
+                            <option>50</option>
+                        </select>
+                    </span>
+                    <button class="btn" id="vStartSession">🚀 Start Session</button>
+                </div>
+
+                <div id="vSession" class="cardish" style="display:none">
+                    <div id="vCardArea"></div>
+                    <div class="session-actions" style="margin-top:10px">
+                        <div class="grade-row">
+                            <span class="badge-info">Đánh giá (0–5):</span>
+                            <label class="pill"><input type="radio" name="vGrade" value="0">0</label>
+                            <label class="pill"><input type="radio" name="vGrade" value="1">1</label>
+                            <label class="pill"><input type="radio" name="vGrade" value="2">2</label>
+                            <label class="pill"><input type="radio" name="vGrade" value="3" checked>3</label>
+                            <label class="pill"><input type="radio" name="vGrade" value="4">4</label>
+                            <label class="pill"><input type="radio" name="vGrade" value="5">5</label>
+                        </div>
+                        <button class="btn primary" id="vSubmitGrade">✅ Lưu & tiếp</button>
+                        <button class="btn ghost" id="vSkip">⏭️ Bỏ qua</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div data-vpane="stats" style="display:none">
+                <div class="grid-2">
+                    <div class="cardish">
+                        <h4 class="small muted">📊 Số liệu</h4>
+                        <div class="row" style="flex-wrap:wrap">
+                            <span class="pill">Tổng từ: <b id="vStatTotal">0</b></span>
+                            <span class="pill">Due hôm nay: <b id="vStatDue">0</b></span>
+                            <span class="pill">EF trung bình: <b id="vStatEF">—</b></span>
+                        </div>
+                    </div>
+                    <div class="cardish">
+                        <h4 class="small muted">🧹 Dọn dẹp</h4>
+                        <div class="row">
+                            <button class="btn danger" id="vDeleteDeck">🗑️ Xoá deck đang chọn</button>
+                            <button class="btn ghost" id="vExportVocab">⬇️ Export Vocab</button>
+                            <label class="btn ghost" for="vImportVocabFile">⬆️ Import Vocab</label>
+                            <input type="file" id="vImportVocabFile" accept="application/json" style="display:none">
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1125,8 +1293,248 @@
                 const arr = store.get(KEY.CLASSES, []).map(c => ({ ...c, id: c.id ? String(c.id) : uid() }));
                 store.set(KEY.CLASSES, arr);
             }
-            store.init(); ensureIds(); renderAll();
+            store.init();
+            // ==== VOCAB INIT ====
+            ensureVocab();
+            renderVocabDeckList();
+            renderVocabWords();
+
+            // Create deck
+            $("#vDeckForm").onsubmit = (e) => {
+                e.preventDefault();
+                const name = e.target.name.value.trim();
+                if (!name) return;
+                const v = ensureVocab();
+                const id = newId();
+                v.decks[id] = { id, name, words: [] };
+                v.activeDeckId = id;
+                saveVocab(v);
+                e.target.reset();
+                selectedWordIds.clear(); $("#vSelWordsCount").textContent = 0;
+                renderVocabDeckList(); renderVocabWords();
+            };
+
+            // Import words (simple parser: "term|meaning")
+            $("#vImportForm").onsubmit = (e) => {
+                e.preventDefault();
+                const f = e.target;
+                const bulk = (f.bulk.value || "").trim();
+                const deckId = f.deck.value;
+                if (!deckId) { alert("Chưa chọn deck."); return; }
+                const v = ensureVocab();
+                const deck = v.decks[deckId];
+                if (!deck) { alert("Deck không tồn tại."); return; }
+                const lines = bulk.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+                const toAdd = lines.map(line => {
+                    const [term, meaning = ''] = line.split("|");
+                    return { id: newId(), term: term?.trim() || "", meaning: meaning?.trim() || "", pos: "", notes: "" };
+                }).filter(x => x.term);
+
+                deck.words = (deck.words || []).concat(toAdd);
+                // optional enrich: bỏ qua để giữ tốc độ
+                saveVocab(v);
+                f.reset();
+                renderVocabDeckList(); renderVocabWords();
+            };
+
+            // Select all
+            $("#vSelectAllWords").onchange = (e) => {
+                const v = ensureVocab();
+                const deck = v.activeDeckId ? v.decks[v.activeDeckId] : null;
+                selectedWordIds.clear();
+                if (e.target.checked && deck) {
+                    (deck.words || []).forEach(w => selectedWordIds.add(String(w.id)));
+                }
+                $("#vSelWordsCount").textContent = selectedWordIds.size;
+                renderVocabWords();
+                // keep the master checkbox state consistent after re-render
+                $("#vSelectAllWords").checked = e.target.checked;
+            };
+
+            // Bulk delete selected
+            $("#vDeleteSelectedWords").onclick = () => {
+                if (selectedWordIds.size === 0) return;
+                const v = ensureVocab();
+                const did = v.activeDeckId;
+                if (!did || !v.decks[did]) return;
+                if (!confirm(`Xoá ${selectedWordIds.size} từ đã chọn?`)) return;
+                const deck = v.decks[did];
+                deck.words = (deck.words || []).filter(w => !selectedWordIds.has(String(w.id)));
+                saveVocab(v);
+                selectedWordIds.clear();
+                $("#vSelWordsCount").textContent = 0;
+                $("#vSelectAllWords").checked = false;
+                renderVocabDeckList(); renderVocabWords();
+            };
+
+            // Sync label quota/active deck name on load
+            (() => {
+                const v = ensureVocab();
+                $("#vActiveDeckName").textContent = v.activeDeckId ? (v.decks[v.activeDeckId]?.name || "—") : "—";
+            })();
+
+            ensureIds(); renderAll();
             ensureClassIds(); ensureLifeIds();
+            // ==== VOCAB INIT ====
+            // Switch active deck from the words panel
+            const activeSel = $("#vActiveDeckSelect");
+            if (activeSel) {
+                activeSel.onchange = () => {
+                    const v = ensureVocab();
+                    v.activeDeckId = activeSel.value || null;
+                    saveVocab(v);
+                    selectedWordIds.clear();
+                    $("#vSelWordsCount").textContent = 0;
+                    $("#vSelectAllWords").checked = false;
+                    $("#vActiveDeckName").textContent = v.activeDeckId ? (v.decks[v.activeDeckId]?.name || "—") : "—";
+                    populateDeckSelects();
+                    renderVocabDeckList();
+                    renderVocabWords();
+                };
+            }
+
+            // Also: when user changes the Import form deck, set active for consistency
+            const importSel = $("#vDeckSelect");
+            if (importSel) {
+                importSel.onchange = () => {
+                    const v = ensureVocab();
+                    v.activeDeckId = importSel.value || null;
+                    saveVocab(v);
+                    selectedWordIds.clear();
+                    $("#vSelWordsCount").textContent = 0;
+                    $("#vSelectAllWords").checked = false;
+                    $("#vActiveDeckName").textContent = v.activeDeckId ? (v.decks[v.activeDeckId]?.name || "—") : "—";
+                    populateDeckSelects();
+                    renderVocabDeckList();
+                    renderVocabWords();
+                };
+            }
+
+            ensureVocab();
+            populateDeckSelects();
+            renderVocabDeckList();
+            function populateDeckSelects() {
+                const v = ensureVocab();
+                const ids = Object.keys(v.decks);
+
+                // Import form select
+                const importSel = $("#vDeckSelect");
+                if (importSel) {
+                    importSel.innerHTML = ids.length ? "" : `<option value="">(Chưa có deck)</option>`;
+                    ids.forEach(id => {
+                        const opt = document.createElement("option");
+                        opt.value = id; opt.textContent = v.decks[id].name;
+                        importSel.appendChild(opt);
+                    });
+                    if (v.activeDeckId && v.decks[v.activeDeckId]) importSel.value = v.activeDeckId;
+                }
+
+                // Active deck switcher (xoá từ)
+                const activeSel = $("#vActiveDeckSelect");
+                if (activeSel) {
+                    activeSel.innerHTML = ids.length ? "" : `<option value="">(Chưa có deck)</option>`;
+                    ids.forEach(id => {
+                        const opt = document.createElement("option");
+                        opt.value = id; opt.textContent = v.decks[id].name;
+                        activeSel.appendChild(opt);
+                    });
+                    if (v.activeDeckId && v.decks[v.activeDeckId]) activeSel.value = v.activeDeckId;
+                }
+            }
+
+            renderVocabWords();
+
+            // Create deck
+            $("#vDeckForm").onsubmit = (e) => {
+                e.preventDefault();
+                const name = e.target.name.value.trim();
+                if (!name) return;
+                const v = ensureVocab();
+                const id = newId();
+                v.decks[id] = { id, name, words: [] };
+                v.activeDeckId = id;
+                saveVocab(v);
+                e.target.reset();
+                selectedWordIds.clear(); $("#vSelWordsCount").textContent = 0;
+                renderVocabDeckList(); renderVocabWords();
+            };
+
+            // Import words (simple parser: "term|meaning")
+            $("#vImportForm").onsubmit = (e) => {
+                e.preventDefault();
+                const f = e.target;
+                const bulk = (f.bulk.value || "").trim();
+                const deckId = f.deck.value;
+                if (!deckId) { alert("Chưa chọn deck."); return; }
+                const v = ensureVocab();
+                const deck = v.decks[deckId];
+                if (!deck) { alert("Deck không tồn tại."); return; }
+                const lines = bulk.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+                const toAdd = lines.map(line => {
+                    const [term, meaning = ''] = line.split("|");
+                    return { id: newId(), term: term?.trim() || "", meaning: meaning?.trim() || "", pos: "", notes: "" };
+                }).filter(x => x.term);
+
+                deck.words = (deck.words || []).concat(toAdd);
+                // optional enrich: bỏ qua để giữ tốc độ
+                saveVocab(v);
+                f.reset();
+                renderVocabDeckList(); renderVocabWords();
+            };
+
+            // Select all
+            $("#vSelectAllWords").onchange = (e) => {
+                const v = ensureVocab();
+                const deck = v.activeDeckId ? v.decks[v.activeDeckId] : null;
+                selectedWordIds.clear();
+                if (e.target.checked && deck) {
+                    (deck.words || []).forEach(w => selectedWordIds.add(String(w.id)));
+                }
+                $("#vSelWordsCount").textContent = selectedWordIds.size;
+                renderVocabWords();
+                // keep the master checkbox state consistent after re-render
+                $("#vSelectAllWords").checked = e.target.checked;
+            };
+
+            // Bulk delete selected
+            $("#vDeleteSelectedWords").onclick = () => {
+                if (selectedWordIds.size === 0) return;
+                const v = ensureVocab();
+                const did = v.activeDeckId;
+                if (!did || !v.decks[did]) return;
+                if (!confirm(`Xoá ${selectedWordIds.size} từ đã chọn?`)) return;
+                const deck = v.decks[did];
+                deck.words = (deck.words || []).filter(w => !selectedWordIds.has(String(w.id)));
+                saveVocab(v);
+                selectedWordIds.clear();
+                $("#vSelWordsCount").textContent = 0;
+                $("#vSelectAllWords").checked = false;
+                renderVocabDeckList(); renderVocabWords();
+            };
+
+            // “Xoá deck đang chọn” (nút ở tab Stats đã có sẵn id)
+            const delDeckBtn = $("#vDeleteDeck");
+            if (delDeckBtn) {
+                delDeckBtn.onclick = () => {
+                    const v = ensureVocab();
+                    const did = v.activeDeckId;
+                    if (!did || !v.decks[did]) { alert("Chưa có deck đang chọn."); return; }
+                    if (!confirm(`Xoá deck "${v.decks[did].name}"?`)) return;
+                    delete v.decks[did];
+                    v.activeDeckId = Object.keys(v.decks)[0] || null;
+                    saveVocab(v);
+                    selectedWordIds.clear(); $("#vSelWordsCount").textContent = 0;
+                    $("#vSelectAllWords").checked = false;
+                    renderVocabDeckList(); renderVocabWords();
+                };
+            }
+
+            // Sync label quota/active deck name on load
+            (() => {
+                const v = ensureVocab();
+                $("#vActiveDeckName").textContent = v.activeDeckId ? (v.decks[v.activeDeckId]?.name || "—") : "—";
+            })();
+
             // ======= Export / Import bindings =======
             $("#exportBtn").onclick = () => {
                 exportAll();
@@ -1361,6 +1769,7 @@
         });
 
     </script>
+    <script src="main.js"></script>
 </body>
 
 </html>

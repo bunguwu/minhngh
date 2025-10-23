@@ -1,0 +1,19 @@
+/* === VOCAB TRAINER === */
+.tabs { display:flex; gap:8px; margin:8px 0; flex-wrap:wrap }
+.tab { padding:8px 12px; border:1px solid rgba(255,255,255,.12); border-radius:10px; cursor:pointer; font-weight:600; background:#0f1520 }
+.tab.active { background: linear-gradient(90deg,#4f8cff,#7bc8ff); color:#0b0f15; border:none }
+.grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:10px }
+@media (max-width:900px){ .grid-2{ grid-template-columns: 1fr } }
+
+.cardish { border:1px dashed rgba(255,255,255,.12); border-radius:12px; padding:10px }
+.vocab-stat { display:inline-flex; gap:6px; align-items:center; padding:4px 10px; border-radius:999px; background:linear-gradient(90deg,rgba(106,166,255,.15),rgba(45,212,191,.15)); border:0 }
+.badge-info { font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.15) }
+
+.flash-front, .flash-back, .quiz-card, .cloze-card, .sentence-card {
+  background:#0f1623; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:16px; min-height:120px
+}
+.flash-actions, .grade-row, .quiz-actions, .session-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center }
+.choice { padding:8px 10px; border:1px solid rgba(255,255,255,.12); border-radius:10px; cursor:pointer }
+.choice.correct { border-color: var(--ok) }
+.choice.wrong { border-color: var(--danger) }
+.small-muted { font-size:12px; color:var(--muted) }
