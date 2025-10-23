@@ -503,12 +503,11 @@
                 <div class="pill">
                     <label class="small" style="margin-right:6px">Hạn</label>
                     <select id="fDue">
-                        <option value="all">Tất cả</option>
                         <option value="today">Hôm nay</option>
                         <option value="overdue">Quá hạn</option>
                         <option value="tomorrow">Ngày mai</option>
                         <option value="upcoming">Sắp tới (≥ hôm nay)</option>
-
+                        <option value="all">Tất cả</option>
                     </select>
                 </div>
                 <div class="pill"><input id="fTag" placeholder="Tag (vd: Học/Gym…)" /></div>
@@ -1287,7 +1286,458 @@
 
 
         function renderAll() { renderProfile(); renderClasses(); renderLife(); ensureIds(); renderTodos(); renderKPIs(); }
+        // ===== Vocab Core Shim — fix undefined functions, zero backend, localStorage =====
+        const VOCAB_STORE_KEY = "ph_vocab_store_v1";
 
+        // helper id
+        function newId() { try { return uid(); } catch { return Math.random().toString(36).slice(2) + Date.now().toString(36); } }
+
+        // state helpers
+        function ensureVocab() {
+            const raw = localStorage.getItem(VOCAB_STORE_KEY);
+            if (raw) {
+                try { return JSON.parse(raw); } catch { /* fallthrough */ }
+            }
+            const init = { decks: {}, activeDeckId: null };
+            localStorage.setItem(VOCAB_STORE_KEY, JSON.stringify(init));
+            return init;
+        }
+        function saveVocab(v) {
+            localStorage.setItem(VOCAB_STORE_KEY, JSON.stringify(v));
+        }
+
+        // selection state for bulk ops
+        let selectedWordIds = new Set();
+
+        // render: deck list + selects + active deck label
+        function renderVocabDeckList() {
+            const v = ensureVocab();
+            const list = document.getElementById("vDeckList");
+            const selImport = document.getElementById("vDeckSelect");
+            const selActive = document.getElementById("vActiveDeckSelect");
+            const activeName = document.getElementById("vActiveDeckName");
+
+            // decks -> array
+            const decks = Object.values(v.decks);
+            // list
+            if (list) {
+                list.innerHTML = decks.length ? "" : `<div class="empty">Chưa có deck.</div>`;
+                decks.forEach(d => {
+                    const item = document.createElement("div");
+                    item.className = "item";
+                    item.innerHTML = `
+        <div>
+          <div><b>${escapeHtml(d.name)}</b></div>
+          <div class="small muted">ID: ${d.id}</div>
+        </div>
+        <div class="row">
+          <button class="btn ghost" data-vset-active="${d.id}">
+            ${v.activeDeckId === d.id ? "✅ Active" : "Set active"}
+          </button>
+          <button class="btn danger" data-vdelete-deck="${d.id}">🗑️</button>
+        </div>`;
+                    list.appendChild(item);
+                });
+
+                // bind actions
+                list.querySelectorAll("[data-vset-active]").forEach(btn => {
+                    btn.onclick = () => {
+                        const id = btn.getAttribute("data-vset-active");
+                        const vv = ensureVocab();
+                        if (!vv.decks[id]) return;
+                        vv.activeDeckId = id; saveVocab(vv);
+                        renderVocabDeckList(); renderVocabWords();
+                    };
+                });
+                list.querySelectorAll("[data-vdelete-deck]").forEach(btn => {
+                    btn.onclick = () => {
+                        const id = btn.getAttribute("data-vdelete-deck");
+                        const vv = ensureVocab();
+                        if (!vv.decks[id]) return;
+                        if (!confirm(`Xoá deck "${vv.decks[id].name}"?`)) return;
+                        delete vv.decks[id];
+                        vv.activeDeckId = Object.keys(vv.decks)[0] || null;
+                        saveVocab(vv);
+                        selectedWordIds.clear();
+                        const master = document.getElementById("vSelectAllWords"); if (master) master.checked = false;
+                        document.getElementById("vSelWordsCount").textContent = 0;
+                        renderVocabDeckList(); renderVocabWords();
+                    };
+                });
+            }
+
+            // populate selects
+            const ids = Object.keys(v.decks);
+            if (selImport) {
+                selImport.innerHTML = ids.length ? "" : `<option value="">(Chưa có deck)</option>`;
+                ids.forEach(id => {
+                    const opt = document.createElement("option");
+                    opt.value = id; opt.textContent = v.decks[id].name;
+                    selImport.appendChild(opt);
+                });
+                if (v.activeDeckId && v.decks[v.activeDeckId]) selImport.value = v.activeDeckId;
+            }
+            if (selActive) {
+                selActive.innerHTML = ids.length ? "" : `<option value="">(Chưa có deck)</option>`;
+                ids.forEach(id => {
+                    const opt = document.createElement("option");
+                    opt.value = id; opt.textContent = v.decks[id].name;
+                    selActive.appendChild(opt);
+                });
+                if (v.activeDeckId && v.decks[v.activeDeckId]) selActive.value = v.activeDeckId;
+            }
+
+            // label
+            if (activeName) {
+                activeName.textContent = v.activeDeckId ? (v.decks[v.activeDeckId]?.name || "—") : "—";
+            }
+            // KPI badge in header (nếu muốn có)
+            const vocabDueToday = document.getElementById("vocabDueToday");
+            if (vocabDueToday) { vocabDueToday.textContent = 0; } // chưa gắn SRS => 0
+        }
+
+        // render: word list for active deck + bind selection checkboxes
+        function renderVocabWords() {
+            const v = ensureVocab();
+            const panel = document.getElementById("vWordList");
+            if (!panel) return;
+
+            const deck = v.activeDeckId ? v.decks[v.activeDeckId] : null;
+            if (!deck) {
+                panel.innerHTML = `<div class="empty">Chưa chọn deck.</div>`;
+                return;
+            }
+
+            const words = deck.words || [];
+            panel.innerHTML = words.length ? "" : `<div class="empty">Deck trống.</div>`;
+            words.forEach(w => {
+                const row = document.createElement("div");
+                row.className = "item";
+                const checked = selectedWordIds.has(String(w.id)) ? "checked" : "";
+                row.innerHTML = `
+      <label class="pill small">
+        <input type="checkbox" data-word-id="${w.id}" ${checked} style="margin-right:6px"> Chọn
+      </label>
+      <div class="sp">
+        <b>${escapeHtml(w.term)}</b> <span class="muted">• ${escapeHtml(w.meaning || "")}</span>
+      </div>
+      <div class="row">
+        <button class="btn danger" data-del-word="${w.id}">🗑️</button>
+      </div>`;
+                panel.appendChild(row);
+            });
+
+            // bind selection
+            panel.querySelectorAll("[data-word-id]").forEach(cb => {
+                cb.onchange = () => {
+                    const id = String(cb.getAttribute("data-word-id"));
+                    if (cb.checked) selectedWordIds.add(id); else selectedWordIds.delete(id);
+                    const cnt = document.getElementById("vSelWordsCount"); if (cnt) cnt.textContent = selectedWordIds.size;
+                };
+            });
+
+            // bind per-item delete
+            panel.querySelectorAll("[data-del-word]").forEach(btn => {
+                btn.onclick = () => {
+                    const id = String(btn.getAttribute("data-del-word"));
+                    const vv = ensureVocab();
+                    const did = vv.activeDeckId;
+                    if (!did || !vv.decks[did]) return;
+                    vv.decks[did].words = (vv.decks[did].words || []).filter(x => String(x.id) !== id);
+                    saveVocab(vv);
+                    selectedWordIds.delete(id);
+                    const cnt = document.getElementById("vSelWordsCount"); if (cnt) cnt.textContent = selectedWordIds.size;
+                    renderVocabWords();
+                };
+            });
+        }
+        // ===== End Vocab Core Shim =====s
+        // ===== Vocab Trainer + SM-2 (plug-in vào Shim) =====
+
+        // --- Utilities ---
+        function isoToday() { return new Date().toISOString().slice(0, 10); }
+        function addDaysISO(n, base) {
+            const d = base ? new Date(base) : new Date(); d.setDate(d.getDate() + n);
+            return d.toISOString().slice(0, 10);
+        }
+        function ensureWordSchedule(w) {
+            if (!w) return w;
+            if (w.ef == null) w.ef = 2.5;
+            if (w.rep == null) w.rep = 0;
+            if (w.interval == null) w.interval = 0;
+            if (!w.due) w.due = isoToday();
+            if (!w.last) w.last = 0;
+            if (!Array.isArray(w.synonyms)) w.synonyms = [];
+            if (!Array.isArray(w.antonyms)) w.antonyms = [];
+            if (!Array.isArray(w.pos)) w.pos = [];
+            if (!w.example) w.example = "";
+            if (!w.forms) w.forms = {};
+            return w;
+        }
+        function normalizeAllWords() {
+            const v = ensureVocab();
+            Object.values(v.decks).forEach(d => {
+                d.words = (d.words || []).map(ensureWordSchedule);
+            });
+            saveVocab(v);
+        }
+
+        function sm2Schedule(word, q) {
+            const quality = Math.max(0, Math.min(5, Number(q) || 0));
+            let { ef = 2.5, rep = 0, interval = 0 } = word;
+
+            if (quality < 3) {
+                rep = 0; interval = 1;
+            } else {
+                if (rep === 0) { interval = 1; rep = 1; }
+                else if (rep === 1) { interval = 6; rep = 2; }
+                else { interval = Math.round(interval * ef); rep += 1; }
+                ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+                if (ef < 1.3) ef = 1.3;
+            }
+            word.ef = ef; word.rep = rep; word.interval = interval;
+            word.due = addDaysISO(interval);
+            word.last = Date.now();
+            return word;
+        }
+
+        function getActiveDeck() {
+            const v = ensureVocab();
+            if (!v.activeDeckId) return null;
+            return v.decks[v.activeDeckId] || null;
+        }
+        function getDueWords(limit) {
+            const deck = getActiveDeck(); if (!deck) return [];
+            const today = isoToday();
+            const pool = (deck.words || []).map(ensureWordSchedule)
+                .filter(w => !w.due || w.due <= today);
+            if (typeof limit !== "number") return pool;
+            // simple shuffle
+            const arr = [...pool]; for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[arr[i], arr[j]] = [arr[j], arr[i]]; }
+            return arr.slice(0, Math.max(1, limit));
+        }
+
+        function updateVocabKPI() {
+            const deck = getActiveDeck();
+            const due = deck ? getDueWords().length : 0;
+            const total = deck ? (deck.words || []).length : 0;
+            const avgEF = deck && total ? ((deck.words || []).reduce((s, w) => s + (w.ef || 2.5), 0) / total).toFixed(2) : "—";
+            const k1 = document.getElementById("vocabDueToday"); if (k1) k1.textContent = due;
+            const s1 = document.getElementById("vStatTotal"); if (s1) s1.textContent = total;
+            const s2 = document.getElementById("vStatDue"); if (s2) s2.textContent = due;
+            const s3 = document.getElementById("vStatEF"); if (s3) s3.textContent = avgEF;
+
+            // KPI badge trên cụm KPI đầu trang
+            let pill = document.getElementById("kpi-vocab");
+            const kpiWrap = document.querySelector(".kpi");
+            if (kpiWrap && !pill) {
+                pill = document.createElement("span");
+                pill.id = "kpi-vocab"; pill.className = "pill";
+                kpiWrap.appendChild(pill);
+            }
+            if (pill) { pill.innerHTML = `📘 Từ cần ôn: <b>${due}</b>`; }
+        }
+
+        // --- Tabs (Plan/Deck/Train/Stats) ---
+        function bindVocabTabs() {
+            const tabs = document.querySelectorAll(".tab[data-vtab]");
+            const panes = document.querySelectorAll("[data-vpane]");
+            tabs.forEach(t => {
+                t.onclick = () => {
+                    tabs.forEach(x => x.classList.remove("active"));
+                    t.classList.add("active");
+                    const id = t.getAttribute("data-vtab");
+                    panes.forEach(p => { p.style.display = (p.getAttribute("data-vpane") === id) ? "block" : "none"; });
+                };
+            });
+        }
+
+        // --- Card renderers ---
+        function renderFlash(w) {
+            const el = document.createElement("div");
+            el.innerHTML = `
+    <div class="flash-front" id="vfFront">
+      <b>${escapeHtml(w.term)}</b>
+      <div class="small-muted">${(w.pos || []).join(", ")}</div>
+    </div>
+    <div class="flash-back" id="vfBack" style="display:none">
+      <div><b>Nghĩa:</b> ${escapeHtml(w.meaning || "(chưa có)")}</div>
+      <div><b>Đồng nghĩa:</b> ${escapeHtml((w.synonyms || []).slice(0, 5).join(", ") || "—")}</div>
+      <div><b>Trái nghĩa:</b> ${escapeHtml((w.antonyms || []).slice(0, 5).join(", ") || "—")}</div>
+      <div><b>Ví dụ:</b> ${escapeHtml(w.example || "—")}</div>
+    </div>
+    <div class="flash-actions" style="margin-top:8px">
+      <button class="btn" id="vShow">👁️ Show</button>
+    </div>`;
+            el.querySelector("#vShow").onclick = () => {
+                el.querySelector("#vfFront").style.display = "none";
+                el.querySelector("#vfBack").style.display = "block";
+            };
+            return el;
+        }
+        function renderCloze(w) {
+            const src = w.example || `I will use the word "${w.term}" in a sentence.`;
+            const rx = new RegExp(`\\b${w.term}\\b`, "gi");
+            const cloze = src.replace(rx, "_____");
+            const el = document.createElement("div");
+            el.className = "cloze-card";
+            el.innerHTML = `
+    <div><b>Điền khuyết</b></div>
+    <div style="margin-top:6px">${escapeHtml(cloze)}</div>
+    <div class="row" style="margin-top:8px">
+      <input id="vClozeAns" placeholder="Từ còn thiếu là gì?">
+      <button class="btn" id="vCheckCloze">Kiểm tra</button>
+    </div>
+    <div class="small-muted">Gốc: ${escapeHtml(src)}</div>`;
+            el.querySelector("#vCheckCloze").onclick = () => {
+                const a = el.querySelector("#vClozeAns").value.trim().toLowerCase();
+                alert(a === String(w.term || "").toLowerCase() ? "✅ Chính xác." : `❌ Đáp án: ${w.term}`);
+            };
+            return el;
+        }
+        function renderQuiz(w) {
+            const el = document.createElement("div");
+            el.className = "quiz-card";
+            let question = "", answer = "", options = [];
+            const poolSyn = (getActiveDeck()?.words || []).flatMap(x => x.synonyms || []);
+            const poolAnt = (getActiveDeck()?.words || []).flatMap(x => x.antonyms || []);
+            function sample(arr, n) {
+                const a = [...arr].filter(Boolean); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; }
+                return a.slice(0, n);
+            }
+
+            if ((w.synonyms || []).length) {
+                question = `Chọn từ đồng nghĩa với “${w.term}”`;
+                answer = sample(w.synonyms, 1)[0];
+                options = sample([answer, ...sample(poolSyn.filter(x => x !== answer), 8)], 4);
+            } else if ((w.antonyms || []).length) {
+                question = `Chọn từ trái nghĩa với “${w.term}”`;
+                answer = sample(w.antonyms, 1)[0];
+                options = sample([answer, ...sample(poolAnt.filter(x => x !== answer), 8)], 4);
+            } else {
+                question = `“${w.term}” có nghĩa gần với:`;
+                answer = (w.meaning || "").split(/[;,]/)[0] || "(chưa có)";
+                const pool = (getActiveDeck()?.words || [])
+                    .map(x => (x.meaning || "").split(/[;,]/)[0])
+                    .filter(x => x && x !== answer);
+                options = sample([answer, ...sample(pool, 8)], 4);
+            }
+            el.innerHTML = `<div><b>${escapeHtml(question)}</b></div>`;
+            const wrap = document.createElement("div"); wrap.className = "row"; wrap.style.marginTop = "6px";
+            options.forEach(opt => {
+                const b = document.createElement("button");
+                b.type = "button"; b.className = "choice"; b.textContent = opt;
+                b.onclick = () => { if (opt === answer) b.classList.add("correct"); else b.classList.add("wrong"); };
+                wrap.appendChild(b);
+            });
+            el.appendChild(wrap);
+            el.appendChild(Object.assign(document.createElement("div"), { className: "small-muted", innerHTML: `Đáp án: <b>${escapeHtml(answer)}</b>` }));
+            return el;
+        }
+        function renderSentence(w) {
+            const el = document.createElement("div");
+            el.className = "sentence-card";
+            el.innerHTML = `
+    <div><b>Đặt câu với “${escapeHtml(w.term)}”</b></div>
+    <textarea id="vSentence" rows="3" placeholder="Viết câu của bạn..."></textarea>
+    <div class="row" style="margin-top:8px">
+      <span class="small-muted">Gợi ý: ${escapeHtml(w.meaning || "—")} | Syn: ${(w.synonyms || []).slice(0, 3).join(", ") || "—"}</span>
+    </div>`;
+            return el;
+        }
+        function pickMode(w) {
+            const modes = ["flash", "quiz", "cloze", "sentence"];
+            if (!(w.synonyms || []).length && !(w.antonyms || []).length) return Math.random() < 0.5 ? "flash" : "sentence";
+            return modes[Math.floor(Math.random() * modes.length)];
+        }
+
+        // --- Session state ---
+        let vSession = { queue: [], idx: 0, mode: "auto" };
+
+        function renderCurrentCard() {
+            const area = document.getElementById("vCardArea"); if (!area) return;
+            area.innerHTML = "";
+            const w = vSession.queue[vSession.idx]; if (!w) { area.innerHTML = `<div class="empty">Hết thẻ.</div>`; return; }
+            const mode = (vSession.mode === "auto") ? pickMode(w) : vSession.mode;
+            let view;
+            if (mode === "flash") view = renderFlash(w);
+            else if (mode === "quiz") view = renderQuiz(w);
+            else if (mode === "cloze") view = renderCloze(w);
+            else view = renderSentence(w);
+            area.appendChild(view);
+        }
+
+        function startVocabSession() {
+            normalizeAllWords();
+            const batchSel = document.getElementById("vBatch");
+            const modeSel = document.getElementById("vMode");
+            const batch = Number(batchSel ? batchSel.value : 20) || 20;
+            const mode = modeSel ? modeSel.value : "auto";
+            const due = getDueWords(batch);
+            vSession.queue = due;
+            vSession.idx = 0;
+            vSession.mode = mode;
+            const panel = document.getElementById("vSession");
+            if (!panel) return;
+            if (!due.length) { alert("Không có thẻ đến hạn."); panel.style.display = "none"; return; }
+            panel.style.display = "block";
+            renderCurrentCard();
+        }
+
+        function submitVocabGrade(skip) {
+            const deck = getActiveDeck(); if (!deck) return;
+            if (!vSession.queue.length) return;
+            const w = vSession.queue[vSession.idx];
+            if (!skip) {
+                const picked = document.querySelector('input[name="vGrade"]:checked');
+                const q = picked ? Number(picked.value) : 3;
+                sm2Schedule(w, q);
+                // persist back
+                deck.words = deck.words.map(x => x.id === w.id ? w : x);
+                const v = ensureVocab(); v.decks[deck.id || v.activeDeckId] = deck; saveVocab(v);
+            }
+            vSession.idx++;
+            if (vSession.idx >= vSession.queue.length) {
+                document.getElementById("vSession").style.display = "none";
+                updateVocabKPI();
+                alert("Hoàn tất session 🎉");
+                return;
+            }
+            renderCurrentCard();
+        }
+
+        // --- Bind UI once DOM ready (independent of existing handlers) ---
+        document.addEventListener("DOMContentLoaded", () => {
+            // normalize/counters
+            normalizeAllWords();
+            updateVocabKPI();
+            bindVocabTabs();
+
+            const btnStart = document.getElementById("vStartSession");
+            if (btnStart) btnStart.onclick = startVocabSession;
+
+            const quickBtn = document.getElementById("vocabStartBtn");
+            if (quickBtn) quickBtn.onclick = () => {
+                const trainTab = document.querySelector('.tab[data-vtab="train"]');
+                if (trainTab) trainTab.click();
+                startVocabSession();
+            };
+
+            const btnSubmit = document.getElementById("vSubmitGrade");
+            if (btnSubmit) btnSubmit.onclick = () => submitVocabGrade(false);
+            const btnSkip = document.getElementById("vSkip");
+            if (btnSkip) btnSkip.onclick = () => submitVocabGrade(true);
+
+            // khi thao tác Deck/Words thay đổi dữ liệu -> refresh KPI
+            const observer = new MutationObserver(() => updateVocabKPI());
+            const wordList = document.getElementById("vWordList");
+            if (wordList) observer.observe(wordList, { childList: true, subtree: true });
+            // cũng refresh KPI mỗi khi mở tab Deck/Train
+            document.querySelectorAll(".tab[data-vtab]").forEach(t => {
+                t.addEventListener("click", updateVocabKPI);
+            });
+        });
+        // ===== End Vocab Trainer + SM-2 =====
         document.addEventListener("DOMContentLoaded", () => {
             function ensureClassIds() {
                 const arr = store.get(KEY.CLASSES, []).map(c => ({ ...c, id: c.id ? String(c.id) : uid() }));
