@@ -754,6 +754,30 @@
             </div>
         </form>
     </dialog>
+<dialog id="paraModal" style="border:none;border-radius:16px;padding:0;max-width:420px;width:92%">
+        <form method="dialog" class="card" style="background:#0f1623">
+            <h3 class="title">➕ Thêm PARA</h3>
+
+            <label>Loại</label>
+            <select name="type">
+                <option value="projects">Project</option>
+                <option value="areas">Area</option>
+                <option value="resources">Resource</option>
+            </select>
+
+            <label>Tiêu đề</label>
+            <input name="title" required placeholder="Tên project / area / resource">
+
+            <label>Ghi chú</label>
+            <textarea name="note" rows="3"></textarea>
+
+            <div class="row" style="margin-top:10px">
+                <button class="btn ghost" value="cancel">Hủy</button>
+                <div class="sp"></div>
+                <button class="btn primary" value="save">Lưu</button>
+            </div>
+        </form>
+    </dialog>
 
     <script>
         /* ======= SIMPLE CONFIG (Chỉnh trong VS Code nếu muốn seed dữ liệu) ======= */
@@ -2247,31 +2271,7 @@
 
     </script>
     <script src="main.js"></script>
-    <dialog id="paraModal" style="border:none;border-radius:16px;padding:0;max-width:420px;width:92%">
-        <form method="dialog" class="card" style="background:#0f1623">
-            <h3 class="title">➕ Thêm PARA</h3>
-
-            <label>Loại</label>
-            <select name="type">
-                <option value="projects">Project</option>
-                <option value="areas">Area</option>
-                <option value="resources">Resource</option>
-            </select>
-
-            <label>Tiêu đề</label>
-            <input name="title" required placeholder="Tên project / area / resource">
-
-            <label>Ghi chú</label>
-            <textarea name="note" rows="3"></textarea>
-
-            <div class="row" style="margin-top:10px">
-                <button class="btn ghost" value="cancel">Hủy</button>
-                <div class="sp"></div>
-                <button class="btn primary" value="save">Lưu</button>
-            </div>
-        </form>
-    </dialog>
-
+    
 </body>
 
 </html>
