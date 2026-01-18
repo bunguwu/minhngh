@@ -4,6 +4,21 @@ KEY.VOCAB_SETTINGS = "ph_vocab_settings";
 KEY.VOCAB_DECKS = "ph_vocab_decks";
 KEY.VOCAB_CARDS = "ph_vocab_cards";
 
+
+//PARA
+
+KEY.PARA = "ph_para";
+
+if (!store.get(KEY.PARA)) {
+  store.set(KEY.PARA, {
+    projects: [],
+    areas: [],
+    resources: [],
+    archives: []
+  });
+}
+
+
 /* Ensure defaults on load */
 (function ensureVocabDefaults() {
     const s = store.get(KEY.VOCAB_SETTINGS);
@@ -726,3 +741,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 /* =================== END VOCAB TRAINER =================== */
+function renderPARA() {
+  const para = store.get(KEY.PARA);
+
+  renderParaList("para-projects", para.projects, "project");
+  renderParaList("para-areas", para.areas, "area");
+  renderParaList("para-resources", para.resources, "resource");
+  renderParaList("para-archives", para.archives, "archive");
+}
+
+function renderParaList(id, arr, type) {
+  const el = document.getElementById(id);
+  el.innerHTML = "";
+
+  if (!arr.length) {
+    el.innerHTML = `<div class="empty">—</div>`;
+    return;
+  }
+
+  arr.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div>
+        <b>${escapeHtml(item.title)}</b>
+        <div class="small muted">${escapeHtml(item.note || "")}</div>
+      </div>
+      ${type === "project" ? `<button class="btn ghost" data-archive="${item.id}">🗄</button>` : ""}
+    `;
+    el.appendChild(div);
+  });
+
+  // archive project
+  el.querySelectorAll("[data-archive]").forEach(btn => {
+    btn.onclick = () => archiveProject(btn.dataset.archive);
+  });
+}
+function archiveProject(id) {
+  const para = store.get(KEY.PARA);
+  const p = para.projects.find(x => x.id === id);
+  if (!p) return;
+
+  para.projects = para.projects.filter(x => x.id !== id);
+  para.archives.push({ ...p, archived_at: Date.now() });
+
+  store.set(KEY.PARA, para);
+  renderPARA();
+}
+document.getElementById("paraAddBtn").onclick = () =>
+  document.getElementById("paraModal").showModal();
+
+document.getElementById("paraModal").onsubmit = (e) => {
+  if (e.submitter.value !== "save") return;
+
+  const f = e.target;
+  const para = store.get(KEY.PARA);
+
+  const item = {
+    id: uid(),
+    title: f.title.value.trim(),
+    note: f.note.value.trim(),
+    created_at: Date.now()
+  };
+
+  para[f.type.value].push(item);
+  store.set(KEY.PARA, para);
+  renderPARA();
+};
+renderPARA();
